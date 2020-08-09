@@ -28,7 +28,8 @@ class GRPCClient(object):
         reply = self.stub.Query(self._build_query(params))
         return QueryReply.from_grpc_response(reply)
 
-    def write(self, data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+    def write(self,
+              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
               tbk: str,
               isvariablelength: bool = False,
               ) -> proto.MultiServerResponse:

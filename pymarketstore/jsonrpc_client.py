@@ -37,12 +37,13 @@ class JsonRpcClient(object):
         ])
         return QueryReply.from_response(reply)
 
-    def write(self, data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+    def write(self,
+              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
               tbk: str,
               isvariablelength: bool = False,
               ) -> dict:
         dataset = timeseries_data_to_write_request(data, tbk)
-        return self.rpc.call("DataService.Write", requests=[dict(
+        return self._request("DataService.Write", requests=[dict(
             dataset=dict(
                 types=dataset['column_types'],
                 names=dataset['column_names'],
@@ -63,9 +64,7 @@ class JsonRpcClient(object):
         :param tbk: Time Bucket Key Name (i.e. "TEST/1Min/Tick" )
         :return: reply object
         """
-        destroy_req = {'requests': [{'key': tbk}]}
-        reply = self._request('DataService.Destroy', **destroy_req)
-        return reply
+        return self._request('DataService.Destroy', requests=dict(key=tbk))
 
     def server_version(self) -> str:
         resp = requests.head(self.endpoint)

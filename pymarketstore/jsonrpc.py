@@ -1,4 +1,3 @@
-import json
 import msgpack
 import requests
 from typing import Dict, Union
@@ -15,17 +14,6 @@ class MsgpackRpcClient(object):
         self._id = 1
         self._endpoint = endpoint
         self._session = requests.Session()
-
-    def __getattr__(self, method: str):
-        assert self._endpoint is not None
-
-        def call(**kwargs):
-            return self._session.post(
-                self._endpoint,
-                data=self.codec.dumps(self.request(method, **kwargs)),
-                headers={"Content-Type": self.mimetype})
-
-        return call
 
     def call(self, rpc_method: str, **query):
         reply = self._rpc_request(rpc_method, **query)
