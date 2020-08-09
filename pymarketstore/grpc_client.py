@@ -1,3 +1,4 @@
+import functools
 import grpc
 import logging
 import numpy as np
@@ -14,12 +15,35 @@ from .utils import is_iterable, timeseries_data_to_write_request
 logger = logging.getLogger(__name__)
 
 
+class MarketstoreStub(gp.MarketstoreStub):
+    def __init__(self, endpoint, options=None):
+        self.endpoint = endpoint
+        super().__init__(grpc.insecure_channel(self.endpoint, options))
+
+        def error_wrapper(wrapped_grpc_endpoint):
+            @functools.wraps(wrapped_grpc_endpoint)
+            def decorator(*args, **kwargs):
+                try:
+                    return wrapped_grpc_endpoint(*args, **kwargs)
+                except grpc.RpcError as e:
+                    if e.__class__.__name__ != '_InactiveRpcError':
+                        raise
+                raise Exception('Could not connect to marketstore at {}'.format(self.endpoint))
+
+            return decorator
+
+        for attr, value in vars(self).items():
+            if attr.startswith('__'):
+                continue
+            elif isinstance(value, grpc.UnaryUnaryMultiCallable):
+                setattr(self, attr, error_wrapper(value))
+
+
 class GRPCClient(object):
 
     def __init__(self, endpoint: str = 'localhost:5995'):
         self.endpoint = endpoint
-        self.channel = grpc.insecure_channel(endpoint)
-        self.stub = gp.MarketstoreStub(self.channel)
+        self.stub = MarketstoreStub(self.endpoint)
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
         if not is_iterable(params):

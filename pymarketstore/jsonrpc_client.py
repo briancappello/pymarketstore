@@ -24,9 +24,12 @@ class JsonRpcClient(object):
     def _request(self, method: str, **query) -> Dict:
         try:
             return self.rpc.call(method, **query)
+        except requests.exceptions.ConnectionError:
+            msg = 'Could not connect to marketstore at {}'.format(self.endpoint)
         except requests.exceptions.HTTPError as exc:
             logger.exception(exc)
             raise
+        raise Exception(msg)
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
         if not is_iterable(params):
