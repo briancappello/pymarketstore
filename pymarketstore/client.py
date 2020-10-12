@@ -6,7 +6,7 @@ from typing import List, Dict, Union
 
 from .grpc_client import GRPCClient
 from .jsonrpc_client import JsonRpcClient
-from .params import Params, ListSymbolsFormat
+from .params import DataShapes, Params, ListSymbolsFormat
 from .results import QueryReply
 
 logger = logging.getLogger(__name__)

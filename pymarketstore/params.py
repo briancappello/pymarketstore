@@ -1,7 +1,44 @@
+from collections import defaultdict
 from enum import Enum
 from typing import Union, List, Any
 
 from .utils import get_timestamp, is_iterable
+
+
+class DataShape(Enum):
+    float32 = "float32"
+    float64 = "float64"
+
+    int16 = "int16"
+    int32 = "int32"
+    int64 = "int64"
+
+    uint8 = "uint8"
+    uint16 = "uint16"
+    uint32 = "uint32"
+    uint64 = "uint64"
+
+    epoch = "epoch"
+    byte = "byte"
+    bool = "bool"
+    none = "none"
+    string = "string"
+
+
+class DataShapes:
+    def __init__(self):
+        self.col_names = set()
+        self.shapes = defaultdict(list)
+
+    def add(self, col_name: str, shape: DataShape):
+        if col_name in self.col_names:
+            raise TypeError(f"`{col_name}` has already been specified")
+        self.col_names.add(col_name)
+        self.shapes[shape.name].append(col_name)
+
+    def __str__(self):
+        return ':'.join(','.join(cols) + f'/{typ}'
+                        for typ, cols in self.shapes.items())
 
 
 class ListSymbolsFormat(Enum):

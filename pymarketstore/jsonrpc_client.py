@@ -7,7 +7,7 @@ import requests
 from typing import Union, Dict, List
 
 from .jsonrpc import MsgpackRpcClient
-from .params import Params, ListSymbolsFormat
+from .params import DataShapes, Params, ListSymbolsFormat
 from .results import QueryReply
 from .stream import StreamConn
 from .utils import is_iterable, timeseries_data_to_write_request
@@ -60,6 +60,15 @@ class JsonRpcClient(object):
     def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
         reply = self._request('DataService.ListSymbols', format=fmt.value)
         return reply.get('Results') or []
+
+    def create(self, tbk: str, data_shapes: DataShapes, row_type: str = "fixed"):
+        if row_type not in {"fixed", "variable"}:
+            raise TypeError("`row_type` must be 'fixed' or 'variable'")
+        return self._request('DataService.Create', requests=[dict(
+            key=f"{tbk}:Symbol/Timeframe/AttributeGroup",
+            datashapes=str(data_shapes),
+            rowtype=row_type,
+        )])
 
     def destroy(self, tbk: str) -> Dict:
         """
