@@ -76,7 +76,7 @@ class JsonRpcClient(object):
         :param tbk: Time Bucket Key Name (i.e. "TEST/1Min/Tick" )
         :return: reply object
         """
-        return self._request('DataService.Destroy', requests=dict(key=tbk))
+        return self._request('DataService.Destroy', requests=[dict(key=tbk)])
 
     def server_version(self) -> str:
         resp = requests.head(self.endpoint)
