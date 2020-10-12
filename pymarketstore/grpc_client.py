@@ -1,113 +1,94 @@
-from __future__ import absolute_import
-
-import logging
-
+import functools
 import grpc
-
-import pymarketstore.proto.marketstore_pb2 as proto
-import pymarketstore.proto.marketstore_pb2_grpc as gp
-from .params import Params
-from .results import QueryReply
-
+import logging
 import numpy as np
+import pandas as pd
+
 from typing import List, Union
+
+from .params import Params, ListSymbolsFormat
+from .proto import marketstore_pb2 as proto
+from .proto import marketstore_pb2_grpc as gp
+from .results import QueryReply
+from .utils import is_iterable, timeseries_data_to_write_request
 
 logger = logging.getLogger(__name__)
 
 
-def isiterable(something):
-    return isinstance(something, (list, tuple, set))
+class MarketstoreStub(gp.MarketstoreStub):
+    def __init__(self, endpoint, options=None):
+        self.endpoint = endpoint
+        super().__init__(grpc.insecure_channel(self.endpoint, options))
+
+        def error_wrapper(wrapped_grpc_endpoint):
+            @functools.wraps(wrapped_grpc_endpoint)
+            def decorator(*args, **kwargs):
+                try:
+                    return wrapped_grpc_endpoint(*args, **kwargs)
+                except grpc.RpcError as e:
+                    if e.__class__.__name__ != '_InactiveRpcError':
+                        raise
+                raise Exception('Could not connect to marketstore at {}'.format(self.endpoint))
+
+            return decorator
+
+        for attr, value in vars(self).items():
+            if attr.startswith('__'):
+                continue
+            elif isinstance(value, grpc.UnaryUnaryMultiCallable):
+                setattr(self, attr, error_wrapper(value))
 
 
 class GRPCClient(object):
 
     def __init__(self, endpoint: str = 'localhost:5995'):
         self.endpoint = endpoint
-        self.channel = grpc.insecure_channel(endpoint)
-        self.stub = gp.MarketstoreStub(self.channel)
+
+        # set max message sizes
+        options = [
+            ('grpc.max_send_message_length', 1 * 1024 ** 3),  # 1GB
+            ('grpc.max_receive_message_length', 1 * 1024 ** 3),  # 1GB
+        ]
+        self.stub = MarketstoreStub(self.endpoint, options)
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
-        if not isiterable(params):
+        if not is_iterable(params):
             params = [params]
-        reqs = self.build_query(params)
 
-        reply = self.stub.Query(reqs)
-
+        reply = self.stub.Query(self._build_query(params))
         return QueryReply.from_grpc_response(reply)
 
-    def write(self, recarray: np.array, tbk: str, isvariablelength: bool = False) -> proto.MultiServerResponse:
-        types = [
-            recarray.dtype[name].str.replace('<', '')
-            for name in recarray.dtype.names
-        ]
-        names = recarray.dtype.names
-        data = [
-            bytes(memoryview(recarray[name]))
-            for name in recarray.dtype.names
-        ]
-        length = len(recarray)
-        start_index = {tbk: 0}
-        lengths = {tbk: len(recarray)}
-
-        req = proto.MultiWriteRequest(requests=[
-            proto.WriteRequest(
-                data=proto.NumpyMultiDataset(
-                    data=proto.NumpyDataset(
-                        column_types=types,
-                        column_names=names,
-                        column_data=data,
-                        length=length,
-                        # data_shapes = [],
-                    ),
-                    start_index=start_index,
-                    lengths=lengths,
-                ),
-                is_variable_length=isvariablelength,
-            )
-        ])
-
+    def write(self,
+              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+              tbk: str,
+              isvariablelength: bool = False,
+              ) -> proto.MultiServerResponse:
+        req = proto.MultiWriteRequest(requests=[dict(
+            data=dict(
+                data=timeseries_data_to_write_request(data, tbk),
+                start_index={tbk: 0},
+                lengths={tbk: len(data)},
+            ),
+            is_variable_length=isvariablelength,
+        )])
         return self.stub.Write(req)
 
-    def build_query(self, params: Union[Params, List[Params]]) -> proto.MultiQueryRequest:
-        reqs = proto.MultiQueryRequest(requests=[])
-        if not isiterable(params):
+    def _build_query(self, params: Union[Params, List[Params]]) -> proto.MultiQueryRequest:
+        if not is_iterable(params):
             params = [params]
-        for param in params:
-            req = proto.QueryRequest(
-                destination=param.tbk,
-            )
 
-            if param.key_category is not None:
-                req.key_category = param.key_category
-            if param.start is not None:
-                req.epoch_start = int(param.start.value / (10 ** 9))
+        return proto.MultiQueryRequest(requests=[p.to_query_request() for p in params])
 
-                # support nanosec
-                start_nanosec = int(param.start.value % (10 ** 9))
-                if start_nanosec != 0:
-                   req.epoch_start_nanos = start_nanosec
+    def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
+        if fmt == ListSymbolsFormat.TBK:
+            req_format = proto.ListSymbolsRequest.Format.TIME_BUCKET_KEY
+        else:
+            req_format = proto.ListSymbolsRequest.Format.SYMBOL
 
-            if param.end is not None:
-                req.epoch_end = int(param.end.value / (10 ** 9))
+        resp = self.stub.ListSymbols(proto.ListSymbolsRequest(format=req_format))
 
-                # support nanosec
-                end_nanosec = int(param.end.value % (10 ** 9))
-                if end_nanosec != 0:
-                   req.epoch_end_nanos = end_nanosec
-
-            if param.end is not None:
-                req.epoch_end = int(param.end.value / (10 ** 9))
-            if param.limit is not None:
-                req.limit_record_count = int(param.limit)
-            if param.limit_from_start is not None:
-                req.limit_from_start = bool(param.limit_from_start)
-            if param.functions is not None:
-                req.functions = param.functions
-            reqs.requests.append(req)
-        return reqs
-
-    def list_symbols(self) -> List[str]:
-        resp = self.stub.ListSymbols(proto.ListSymbolsRequest())
+        if resp is None:
+            return []
         return resp.results
 
     def destroy(self, tbk: str) -> proto.MultiServerResponse:
