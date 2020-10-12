@@ -43,7 +43,13 @@ class GRPCClient(object):
 
     def __init__(self, endpoint: str = 'localhost:5995'):
         self.endpoint = endpoint
-        self.stub = MarketstoreStub(self.endpoint)
+
+        # set max message sizes
+        options = [
+            ('grpc.max_send_message_length', 1 * 1024 ** 3),  # 1GB
+            ('grpc.max_receive_message_length', 1 * 1024 ** 3),  # 1GB
+        ]
+        self.stub = MarketstoreStub(self.endpoint, options)
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
         if not is_iterable(params):
