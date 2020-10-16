@@ -65,9 +65,9 @@ class JsonRpcClient(object):
         if row_type not in {"fixed", "variable"}:
             raise TypeError("`row_type` must be 'fixed' or 'variable'")
         return self._request('DataService.Create', requests=[dict(
-            key=f"{tbk}:Symbol/Timeframe/AttributeGroup",
-            datashapes=str(data_shapes),
-            rowtype=row_type,
+            key=tbk,
+            data_shapes=str(data_shapes),
+            row_type=row_type,
         )])
 
     def destroy(self, tbk: str) -> Dict:
