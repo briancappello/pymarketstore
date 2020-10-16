@@ -1,44 +1,48 @@
-from collections import defaultdict
 from enum import Enum
 from typing import Union, List, Any
 
+from .proto import marketstore_pb2 as proto
 from .utils import get_timestamp, is_iterable
 
 
 class DataShape(Enum):
-    float32 = "float32"
-    float64 = "float64"
+    float32 = "FLOAT32"
+    float64 = "FLOAT64"
 
-    int16 = "int16"
-    int32 = "int32"
-    int64 = "int64"
+    int16 = "INT16"
+    int32 = "INT32"
+    int64 = "INT64"
 
-    uint8 = "uint8"
-    uint16 = "uint16"
-    uint32 = "uint32"
-    uint64 = "uint64"
+    uint8 = "UINT8"
+    uint16 = "UINT16"
+    uint32 = "UINT32"
+    uint64 = "UINT64"
 
-    epoch = "epoch"
-    byte = "byte"
-    bool = "bool"
-    none = "none"
-    string = "string"
+    epoch = "EPOCH"
+    byte = "BYTE"
+    bool = "BOOL"
+    none = "NONE"
+    string = "STRING"
 
 
 class DataShapes:
     def __init__(self):
         self.col_names = set()
-        self.shapes = defaultdict(list)
+        self.data_shapes = []
 
     def add(self, col_name: str, shape: DataShape):
         if col_name in self.col_names:
-            raise TypeError(f"`{col_name}` has already been specified")
+            raise ValueError(f"`{col_name}` has already been specified")
         self.col_names.add(col_name)
-        self.shapes[shape.name].append(col_name)
+        self.data_shapes.append((col_name, shape))
+
+    def to_grpc(self) -> List[proto.DataShape]:
+        return [proto.DataShape(name=col, type=shape.value)
+                for col, shape in self.data_shapes]
 
     def __str__(self):
-        return ':'.join(','.join(cols) + f'/{typ}'
-                        for typ, cols in self.shapes.items())
+        return ':'.join(f'{col}/{shape.name}'
+                        for col, shape in self.data_shapes)
 
 
 class ListSymbolsFormat(Enum):

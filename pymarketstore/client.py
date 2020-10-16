@@ -52,8 +52,6 @@ class Client:
         return self.client.list_symbols(fmt)
 
     def create(self, tbk: str, data_shapes: DataShapes, row_type: str = "fixed"):
-        if isinstance(self.client, GRPCClient):
-            raise NotImplementedError
         return self.client.create(tbk, data_shapes, row_type)
 
     def destroy(self, tbk: str) -> Dict:

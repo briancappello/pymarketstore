@@ -1,5 +1,5 @@
 from .client import Client  # noqa
-from .params import Params, ListSymbolsFormat  # noqa
+from .params import Params, DataShape, DataShapes, ListSymbolsFormat  # noqa
 from .jsonrpc_client import MsgpackRpcClient  # noqa
 from .grpc_client import GRPCClient  # noqa
 
