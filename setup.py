@@ -26,14 +26,14 @@ setup(
     url='https://github.com/alpacahq/pymarketstore',
     keywords='database,pandas,financial,timeseries',
     packages=find_packages(exclude=('tests', 'docs')),
+    zip_safe=False,
     install_requires=[
-        'msgpack-python',
+        'msgpack',
         'numpy',
         'requests',
         'pandas',
         'six',
         'urllib3',
-        'pytest',
         'websocket-client',
         'protobuf>=3.11.3',
         'grpcio'

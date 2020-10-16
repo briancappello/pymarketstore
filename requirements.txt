@@ -1,10 +1,9 @@
-msgpack-python
+msgpack
 numpy
 pandas
 requests
 six
 urllib3
-pytest
 setuptools>=28.8.0
 websocket-client
 protobuf==3.11.3
