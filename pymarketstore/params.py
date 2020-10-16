@@ -1,11 +1,11 @@
 from enum import Enum
-from typing import Union, List, Any
+from typing import *
 
 from .proto import marketstore_pb2 as proto
 from .utils import get_timestamp, is_iterable
 
 
-class DataShape(Enum):
+class DataType(Enum):
     float32 = "FLOAT32"
     float64 = "FLOAT64"
 
@@ -25,24 +25,23 @@ class DataShape(Enum):
     string = "STRING"
 
 
-class DataShapes:
-    def __init__(self):
+class DataShape:
+    def __init__(self, data_shape: List[Tuple[str, Union[DataType, str]]] = None):
         self.col_names = set()
-        self.data_shapes = []
+        self.data_shape = []
+        for col_name, data_type in (data_shape or ()):
+            self.add(col_name, data_type)
 
-    def add(self, col_name: str, shape: DataShape):
+    def add(self, col_name: str, data_type: Union[DataType, str]):
         if col_name in self.col_names:
             raise ValueError(f"`{col_name}` has already been specified")
+        if isinstance(data_type, str):
+            data_type = DataType[data_type.lower()]
         self.col_names.add(col_name)
-        self.data_shapes.append((col_name, shape))
+        self.data_shape.append((col_name, data_type))
 
-    def to_grpc(self) -> List[proto.DataShape]:
-        return [proto.DataShape(name=col, type=shape.value)
-                for col, shape in self.data_shapes]
-
-    def __str__(self):
-        return ':'.join(f'{col}/{shape.name}'
-                        for col, shape in self.data_shapes)
+    def __iter__(self):
+        return iter(self.data_shape)
 
 
 class ListSymbolsFormat(Enum):

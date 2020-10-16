@@ -1,12 +1,13 @@
 import logging
 import numpy as np
+import pandas as pd
 import re
 
-from typing import List, Dict, Union
+from typing import *
 
 from .grpc_client import GRPCClient
 from .jsonrpc_client import JsonRpcClient
-from .params import DataShapes, Params, ListSymbolsFormat
+from .params import DataShape, DataType, ListSymbolsFormat, Params
 from .results import QueryReply
 
 logger = logging.getLogger(__name__)
@@ -31,30 +32,63 @@ class Client:
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
         """
-        execute QUERY to MarketStore server
+        query the MarketStore server
+
         :param params: Params object used to query
         :return: QueryReply object
         """
         return self.client.query(params)
 
-    def write(self, recarray: np.array, tbk: str, isvariablelength: bool = False) -> str:
+    def write(self,
+              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+              tbk: str,
+              isvariablelength: bool = False,
+              ) -> dict:
         """
-        execute WRITE to MarketStore server
-        :param recarray: numpy.array object to write
+        write data to the MarketStore server
+
+        :param data: A pd.DataFrame, pd.Series, np.ndarray, or np.recarray to write
         :param tbk: Time Bucket Key string.
         ('{symbol name}/{time frame}/{attribute group name}' ex. 'TSLA/1Min/OHLCV' , 'AAPL/1Min/TICK' )
         :param isvariablelength: should be set true if the record content is variable-length array
         :return:
         """
-        return self.client.write(recarray, tbk, isvariablelength=isvariablelength)
+        return self.client.write(data, tbk, isvariablelength=isvariablelength)
 
     def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
+        """
+        list symbols stored on the MarketStore server
+
+        Optionally specify `fmt=ListSymbolsFormat.TBK` to get back a list of
+        time bucket keys
+
+        :param fmt: The symbol format to request
+        :type fmt: ListSymbolsFormat
+        """
         return self.client.list_symbols(fmt)
 
-    def create(self, tbk: str, data_shapes: DataShapes, row_type: str = "fixed"):
-        return self.client.create(tbk, data_shapes, row_type)
+    def create(self,
+               tbk: str,
+               data_shape: Union[DataShape, List[Tuple[str, Union[DataType, str]]]],
+               row_type: str = "fixed",
+               ) -> Dict:
+        """
+        create a new time bucket key on the MarketStore server
+
+        :param tbk: The time bucket key to create (eg 'TSLA/1D/OHLCV')
+        :param data_shape: The shape of the data (column names and their types)
+        :param row_type: Whether the data's row type is "fixed" or "variable"
+        """
+        if not isinstance(data_shape, DataShape):
+            data_shape = DataShape(data_shape)
+        return self.client.create(tbk, data_shape, row_type)
 
     def destroy(self, tbk: str) -> Dict:
+        """
+        delete a time bucket key and its data from the MarketStore server
+
+        :param tbk: The time bucket key to delete (eg 'TSLA/1D/OHLCV')
+        """
         return self.client.destroy(tbk)
 
     def server_version(self) -> str:

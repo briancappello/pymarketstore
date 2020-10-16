@@ -6,7 +6,7 @@ import pandas as pd
 
 from typing import List, Union
 
-from .params import Params, DataShapes, ListSymbolsFormat
+from .params import DataShape, ListSymbolsFormat, Params
 from .proto import marketstore_pb2 as proto
 from .proto import marketstore_pb2_grpc as gp
 from .results import QueryReply
@@ -94,12 +94,13 @@ class GRPCClient(object):
     def create(
         self,
         tbk: str,
-        data_shapes: DataShapes,
+        data_shape: DataShape,
         row_type: str = "fixed",
     ) -> proto.MultiServerResponse:
         req = proto.MultiCreateRequest(requests=[proto.CreateRequest(
             key=tbk,
-            data_shapes=data_shapes.to_grpc(),
+            data_shapes=[proto.DataShape(name=col, type=data_type.value)
+                         for col, data_type in data_shape],
             row_type=row_type,
         )])
         return self.stub.Create(req)
