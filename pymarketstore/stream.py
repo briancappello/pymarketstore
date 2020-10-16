@@ -4,7 +4,7 @@ import websocket
 from websocket import ABNF
 
 
-class StreamConn(object):
+class StreamConn:
 
     def __init__(self, endpoint):
         self.endpoint = endpoint

@@ -42,7 +42,7 @@ class Client:
     def write(self,
               data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
               tbk: str,
-              isvariablelength: bool = False,
+              is_variable_length: bool = False,
               ) -> dict:
         """
         write data to the MarketStore server
@@ -50,10 +50,10 @@ class Client:
         :param data: A pd.DataFrame, pd.Series, np.ndarray, or np.recarray to write
         :param tbk: Time Bucket Key string.
         ('{symbol name}/{time frame}/{attribute group name}' ex. 'TSLA/1Min/OHLCV' , 'AAPL/1Min/TICK' )
-        :param isvariablelength: should be set true if the record content is variable-length array
+        :param is_variable_length: should be set true if the record content is variable-length array
         :return:
         """
-        return self.client.write(data, tbk, isvariablelength=isvariablelength)
+        return self.client.write(data, tbk, is_variable_length=is_variable_length)
 
     def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
         """

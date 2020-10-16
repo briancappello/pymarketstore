@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import *
 
-from .proto import marketstore_pb2 as proto
 from .utils import get_timestamp, is_iterable
 
 
@@ -54,7 +53,7 @@ class ListSymbolsFormat(Enum):
     TBK = "tbk"
 
 
-class Params(object):
+class Params:
 
     def __init__(self, symbols: Union[List[str], str], timeframe: str, attrgroup: str,
                  start: Union[int, str] = None, end: Union[int, str] = None,

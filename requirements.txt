@@ -2,7 +2,6 @@ msgpack
 numpy
 pandas
 requests
-six
 urllib3
 setuptools>=28.8.0
 websocket-client

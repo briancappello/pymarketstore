@@ -5,7 +5,7 @@ import grpc
 from pymarketstore.proto import marketstore_pb2 as pymarketstore_dot_proto_dot_marketstore__pb2
 
 
-class MarketstoreStub(object):
+class MarketstoreStub:
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -46,7 +46,7 @@ class MarketstoreStub(object):
                 )
 
 
-class MarketstoreServicer(object):
+class MarketstoreServicer:
     """Missing associated documentation comment in .proto file."""
 
     def Query(self, request, context):
@@ -125,7 +125,7 @@ def add_MarketstoreServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class Marketstore(object):
+class Marketstore:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod

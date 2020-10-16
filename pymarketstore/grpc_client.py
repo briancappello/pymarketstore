@@ -15,31 +15,7 @@ from .utils import is_iterable, timeseries_data_to_write_request
 logger = logging.getLogger(__name__)
 
 
-class MarketstoreStub(gp.MarketstoreStub):
-    def __init__(self, endpoint, options=None):
-        self.endpoint = endpoint
-        super().__init__(grpc.insecure_channel(self.endpoint, options))
-
-        def error_wrapper(wrapped_grpc_endpoint):
-            @functools.wraps(wrapped_grpc_endpoint)
-            def decorator(*args, **kwargs):
-                try:
-                    return wrapped_grpc_endpoint(*args, **kwargs)
-                except grpc.RpcError as e:
-                    if e.__class__.__name__ != '_InactiveRpcError':
-                        raise
-                raise Exception('Could not connect to marketstore at {}'.format(self.endpoint))
-
-            return decorator
-
-        for attr, value in vars(self).items():
-            if attr.startswith('__'):
-                continue
-            elif isinstance(value, grpc.UnaryUnaryMultiCallable):
-                setattr(self, attr, error_wrapper(value))
-
-
-class GRPCClient(object):
+class GRPCClient:
 
     def __init__(self, endpoint: str = 'localhost:5995'):
         self.endpoint = endpoint
@@ -52,16 +28,13 @@ class GRPCClient(object):
         self.stub = MarketstoreStub(self.endpoint, options)
 
     def query(self, params: Union[Params, List[Params]]) -> QueryReply:
-        if not is_iterable(params):
-            params = [params]
-
         reply = self.stub.Query(self._build_query(params))
         return QueryReply.from_grpc_response(reply)
 
     def write(self,
               data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
               tbk: str,
-              isvariablelength: bool = False,
+              is_variable_length: bool = False,
               ) -> proto.MultiServerResponse:
         req = proto.MultiWriteRequest(requests=[dict(
             data=dict(
@@ -69,15 +42,9 @@ class GRPCClient(object):
                 start_index={tbk: 0},
                 lengths={tbk: len(data)},
             ),
-            is_variable_length=isvariablelength,
+            is_variable_length=is_variable_length,
         )])
         return self.stub.Write(req)
-
-    def _build_query(self, params: Union[Params, List[Params]]) -> proto.MultiQueryRequest:
-        if not is_iterable(params):
-            params = [params]
-
-        return proto.MultiQueryRequest(requests=[p.to_query_request() for p in params])
 
     def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
         if fmt == ListSymbolsFormat.TBK:
@@ -86,10 +53,7 @@ class GRPCClient(object):
             req_format = proto.ListSymbolsRequest.Format.SYMBOL
 
         resp = self.stub.ListSymbols(proto.ListSymbolsRequest(format=req_format))
-
-        if resp is None:
-            return []
-        return resp.results
+        return resp.results if resp else []
 
     def create(
         self,
@@ -117,5 +81,35 @@ class GRPCClient(object):
         resp = self.stub.ServerVersion(proto.ServerVersionRequest())
         return resp.version
 
+    def _build_query(self, params: Union[Params, List[Params]]) -> proto.MultiQueryRequest:
+        if not is_iterable(params):
+            params = [params]
+
+        return proto.MultiQueryRequest(requests=[p.to_query_request() for p in params])
+
     def __repr__(self):
         return 'GRPCClient("{}")'.format(self.endpoint)
+
+
+class MarketstoreStub(gp.MarketstoreStub):
+    def __init__(self, endpoint, options=None):
+        self.endpoint = endpoint
+        super().__init__(grpc.insecure_channel(self.endpoint, options))
+
+        def error_wrapper(wrapped_grpc_endpoint):
+            @functools.wraps(wrapped_grpc_endpoint)
+            def decorator(*args, **kwargs):
+                try:
+                    return wrapped_grpc_endpoint(*args, **kwargs)
+                except grpc.RpcError as e:
+                    if e.__class__.__name__ != '_InactiveRpcError':
+                        raise
+                raise Exception('Could not connect to marketstore at {}'.format(self.endpoint))
+
+            return decorator
+
+        for attr, value in vars(self).items():
+            if attr.startswith('__'):
+                continue
+            elif isinstance(value, grpc.UnaryUnaryMultiCallable):
+                setattr(self, attr, error_wrapper(value))

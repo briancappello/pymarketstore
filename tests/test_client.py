@@ -1,13 +1,9 @@
+import pytest
 import numpy as np
 
+from unittest.mock import patch
+
 import pymarketstore as pymkts
-
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
-
-import pytest
 
 
 params = [

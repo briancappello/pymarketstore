@@ -1,23 +1,19 @@
 import numpy as np
 
+from unittest.mock import patch
+
 import pymarketstore as pymkts
-
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
-
-from pymarketstore.proto import marketstore_pb2_grpc
+from pymarketstore import grpc_client
 from pymarketstore.proto.marketstore_pb2 import MultiQueryRequest, QueryRequest
 
 
 def test_grpc_client_init():
     c = pymkts.GRPCClient("127.0.0.1:5995")
     assert c.endpoint == "127.0.0.1:5995"
-    assert isinstance(c.stub, marketstore_pb2_grpc.MarketstoreStub)
+    assert isinstance(c.stub, grpc_client.MarketstoreStub)
 
 
-@patch('pymarketstore.proto.marketstore_pb2_grpc.MarketstoreStub')
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_query(stub):
     # --- given ---
     c = pymkts.GRPCClient()
@@ -30,7 +26,7 @@ def test_query(stub):
     assert c.stub.Query.called == 1
 
 
-@patch('pymarketstore.proto.marketstore_pb2_grpc.MarketstoreStub')
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_write(stub):
     # --- given ---
     c = pymkts.GRPCClient()
@@ -57,7 +53,7 @@ def test_build_query():
         requests=[QueryRequest(destination="TSLA/1Min/OHLCV", epoch_start=1500000000, epoch_end=4294967296)])
 
 
-@patch('pymarketstore.proto.marketstore_pb2_grpc.MarketstoreStub')
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_list_symbols(stub):
     # --- given ---
     c = pymkts.GRPCClient()
@@ -69,7 +65,7 @@ def test_list_symbols(stub):
     assert c.stub.ListSymbols.called == 1
 
 
-@patch('pymarketstore.proto.marketstore_pb2_grpc.MarketstoreStub')
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_destroy(stub):
     # --- given ---
     c = pymkts.GRPCClient()
@@ -82,7 +78,7 @@ def test_destroy(stub):
     assert c.stub.Destroy.called == 1
 
 
-@patch('pymarketstore.proto.marketstore_pb2_grpc.MarketstoreStub')
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_server_version(stub):
     # --- given ---
     c = pymkts.GRPCClient()

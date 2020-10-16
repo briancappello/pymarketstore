@@ -2,7 +2,6 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
-import six
 
 import pymarketstore.proto.marketstore_pb2 as proto
 
@@ -27,7 +26,7 @@ def decode_responses(responses: List[Dict]) -> List:
         array_dict = {}
         # array = decode(packed)
         array = decode(packed['names'], packed['types'], packed['data'], packed['length'])
-        for tbk, start_idx in six.iteritems(packed['startindex']):
+        for tbk, start_idx in packed['startindex'].items():
             length = packed['lengths'][tbk]
             key = str(tbk.split(':')[0])
             array_dict[key] = array[start_idx:start_idx + length]
@@ -41,7 +40,7 @@ def decode_grpc_responses(responses) -> List[Dict[str, np.ndarray]]:
         packed = response.result
         array_dict = {}
         array = decode(packed.data.column_names, packed.data.column_types, packed.data.column_data, packed.data.length)
-        for tbk, start_idx in six.iteritems(packed.start_index):
+        for tbk, start_idx in packed.start_index.items():
             length = packed.lengths[tbk]
             key = str(tbk.split(':')[0])
             array_dict[key] = array[start_idx:start_idx + length]
@@ -49,7 +48,7 @@ def decode_grpc_responses(responses) -> List[Dict[str, np.ndarray]]:
     return results
 
 
-class DataSet(object):
+class DataSet:
 
     def __init__(self, array: np.ndarray, key: str, timezone: str):
         self.array = array
@@ -85,12 +84,12 @@ class DataSet(object):
         )
 
 
-class QueryResult(object):
+class QueryResult:
 
     def __init__(self, result: Dict[str, np.ndarray], timezone: str):
         self.result = {
             key: DataSet(value, key, timezone)
-            for key, value in six.iteritems(result)
+            for key, value in result.items()
         }
         self.timezone = timezone
 
@@ -105,12 +104,12 @@ class QueryResult(object):
 
     def __repr__(self):
         content = '\n'.join([
-            str(ds) for _, ds in six.iteritems(self.result)
+            str(ds) for _, ds in self.result.items()
         ])
         return 'QueryResult({})'.format(content)
 
 
-class QueryReply(object):
+class QueryReply:
 
     def __init__(self, results, timezone):
         self.results = results
@@ -157,7 +156,7 @@ class QueryReply(object):
     def by_symbols(self) -> Dict[str, DataSet]:
         datasets = self.all()
         ret = {}
-        for key, dataset in six.iteritems(datasets):
+        for key, dataset in datasets.items():
             symbol = key.split('/')[0]
             ret[symbol] = dataset
         return ret

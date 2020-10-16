@@ -32,18 +32,19 @@ setup(
         'numpy',
         'requests',
         'pandas',
-        'six',
         'urllib3',
         'websocket-client',
         'protobuf>=3.11.3',
-        'grpcio'
+        'grpcio',
     ],
-    tests_require=[
-        'pytest',
-        'pytest-cov',
-        'coverage>=4.4.1',
-        'mock>=1.0.1',
-        'grpcio-tools'
-    ],
+    extras_require={
+        'dev': [
+            'pytest',
+            'pytest-cov',
+            'coverage>=4.4.1',
+            'mock>=1.0.1',
+            'grpcio-tools',
+        ],
+    },
     setup_requires=['pytest-runner', 'flake8'],
 )
