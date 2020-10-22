@@ -34,8 +34,8 @@ setup(
         'pandas',
         'urllib3',
         'websocket-client',
-        'protobuf>=3.11.3',
-        'grpcio',
+        'protobuf>=3.13',
+        'grpcio>=1.32.0',
     ],
     extras_require={
         'dev': [
