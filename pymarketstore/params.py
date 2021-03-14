@@ -7,10 +7,14 @@ from .utils import get_timestamp, is_iterable
 class DataType(Enum):
     float32 = "FLOAT32"
     float64 = "FLOAT64"
+    f4 = "FLOAT32"
+    f8 = "FLOAT64"
 
     int16 = "INT16"
     int32 = "INT32"
     int64 = "INT64"
+    i4 = "INT32"
+    i8 = "INT64"
 
     uint8 = "UINT8"
     uint16 = "UINT16"

@@ -5,7 +5,7 @@ import grpc
 from pymarketstore.proto import marketstore_pb2 as pymarketstore_dot_proto_dot_marketstore__pb2
 
 
-class MarketstoreStub:
+class MarketstoreStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -19,14 +19,14 @@ class MarketstoreStub:
                 request_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiQueryRequest.SerializeToString,
                 response_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiQueryResponse.FromString,
                 )
-        self.Write = channel.unary_unary(
-                '/proto.Marketstore/Write',
-                request_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.SerializeToString,
-                response_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
-                )
         self.Create = channel.unary_unary(
                 '/proto.Marketstore/Create',
                 request_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiCreateRequest.SerializeToString,
+                response_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
+                )
+        self.Write = channel.unary_unary(
+                '/proto.Marketstore/Write',
+                request_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.SerializeToString,
                 response_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
                 )
         self.Destroy = channel.unary_unary(
@@ -46,7 +46,7 @@ class MarketstoreStub:
                 )
 
 
-class MarketstoreServicer:
+class MarketstoreServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Query(self, request, context):
@@ -55,13 +55,13 @@ class MarketstoreServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Write(self, request, context):
+    def Create(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Create(self, request, context):
+    def Write(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -93,14 +93,14 @@ def add_MarketstoreServicer_to_server(servicer, server):
                     request_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiQueryRequest.FromString,
                     response_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiQueryResponse.SerializeToString,
             ),
-            'Write': grpc.unary_unary_rpc_method_handler(
-                    servicer.Write,
-                    request_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.FromString,
-                    response_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.SerializeToString,
-            ),
             'Create': grpc.unary_unary_rpc_method_handler(
                     servicer.Create,
                     request_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiCreateRequest.FromString,
+                    response_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.SerializeToString,
+            ),
+            'Write': grpc.unary_unary_rpc_method_handler(
+                    servicer.Write,
+                    request_deserializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.FromString,
                     response_serializer=pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.SerializeToString,
             ),
             'Destroy': grpc.unary_unary_rpc_method_handler(
@@ -125,7 +125,7 @@ def add_MarketstoreServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class Marketstore:
+class Marketstore(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
@@ -146,23 +146,6 @@ class Marketstore:
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Write(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/proto.Marketstore/Write',
-            pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.SerializeToString,
-            pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
     def Create(request,
             target,
             options=(),
@@ -175,6 +158,23 @@ class Marketstore:
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/proto.Marketstore/Create',
             pymarketstore_dot_proto_dot_marketstore__pb2.MultiCreateRequest.SerializeToString,
+            pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Write(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/proto.Marketstore/Write',
+            pymarketstore_dot_proto_dot_marketstore__pb2.MultiWriteRequest.SerializeToString,
             pymarketstore_dot_proto_dot_marketstore__pb2.MultiServerResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

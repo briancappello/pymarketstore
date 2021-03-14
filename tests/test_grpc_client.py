@@ -27,6 +27,20 @@ def test_query(stub):
 
 
 @patch('pymarketstore.grpc_client.MarketstoreStub')
+def test_create(stub):
+    # --- given ---
+    c = pymkts.GRPCClient()
+    dtype = [('Epoch', 'i8'), ('Bid', 'f4'), ('Ask', 'f4')]
+    tbk = 'TEST/1Min/TICK'
+
+    # --- when ---
+    c.create(tbk=tbk, data_shape=pymkts.DataShape(dtype))
+
+    # --- then ---
+    assert c.stub.Create.called == 1
+
+
+@patch('pymarketstore.grpc_client.MarketstoreStub')
 def test_write(stub):
     # --- given ---
     c = pymkts.GRPCClient()
