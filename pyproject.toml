@@ -1,0 +1,104 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pymarketstore"
+version = "0.18"
+description = "Marketstore python driver"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Alpaca", email = "oss@alpaca.markets" }
+]
+keywords = ["database", "pandas", "financial", "timeseries"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Office/Business :: Financial",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "click>=8.1.0",
+    "grpcio>=1.60.0",
+    "msgpack>=1.0.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "protobuf>=4.25.0",
+    "requests>=2.31.0",
+    "tabulate>=0.9.0",
+    "urllib3>=2.0.0",
+    "websocket-client>=1.6.0",
+    "websockets>=12.0",
+]
+
+[project.scripts]
+pymkts = "pymarketstore.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "grpcio-tools>=1.60.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "coverage>=7.4.0",
+    "ruff>=0.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/alpacahq/pymarketstore"
+Repository = "https://github.com/alpacahq/pymarketstore"
+Issues = "https://github.com/alpacahq/pymarketstore/issues"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.circleci",
+    "/tests",
+    "/docs",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["pymarketstore"]
+
+[tool.pytest.ini_options]
+addopts = "--verbose --cov=pymarketstore --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["pymarketstore"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pymarketstore"]

@@ -7,5 +7,6 @@ from .grpc_client import GRPCClient  # noqa
 Param = Params  # noqa
 
 from .stream import StreamConn  # noqa
+from .async_stream import AsyncStreamConn  # noqa
 
 __version__ = '0.18'

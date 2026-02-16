@@ -1,90 +1,99 @@
-version: 2
+version: 2.1
+
 jobs:
-  build:
+  test:
     docker:
-      - image: python:3.6.10
+      - image: python:3.12
     working_directory: ~/repo
     steps:
-      - run: echo "hello python 3.6.10"
       - checkout
 
-      # Download and cache dependencies
+      - run:
+          name: Install uv
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
+
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+            - v2-uv-cache-{{ checksum "pyproject.toml" }}
+            - v2-uv-cache-
 
       - run:
-          name: install dependencies
+          name: Install dependencies
           command: |
-            pip install -r requirements.txt
+            uv sync --all-extras
 
       - save_cache:
           paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+            - ~/.cache/uv
+          key: v2-uv-cache-{{ checksum "pyproject.toml" }}
 
-      # run tests!
-      # this example uses Django's built-in test-runner
-      # other common Python testing frameworks include pytest and nose
-      # https://pytest.org
-      # https://nose.readthedocs.io
       - run:
-          name: run tests
+          name: Run linter
           command: |
-            python setup.py test
+            uv run ruff check .
+
+      - run:
+          name: Run tests
+          command: |
+            uv run pytest --junitxml=test-results/junit.xml
+
+      - store_test_results:
+          path: test-results
 
       - store_artifacts:
-          path: test-reports3.6.10
-          destination: test-reports3.6.10
+          path: test-results
+          destination: test-results
 
   deploy:
     docker:
-      - image: python:3.6.10
+      - image: python:3.12
     working_directory: ~/repo
     steps:
       - checkout
 
       - run:
-          name: verify git tag vs. version
+          name: Install uv
           command: |
-            python setup.py verify
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> $BASH_ENV
 
       - run:
-          name: init .pypirc
+          name: Verify git tag vs. version
           command: |
-            echo -e "[pypi]" >> ~/.pypirc
-            echo -e "username = $PYPI_USERNAME" >> ~/.pypirc
-            echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
+            VERSION=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+            if [ "$CIRCLE_TAG" != "$VERSION" ]; then
+              echo "Git tag: $CIRCLE_TAG does not match the version of this app: $VERSION"
+              exit 1
+            fi
 
       - run:
-          name: create packages
+          name: Build package
           command: |
-            python setup.py sdist # create a source distribution
-            python setup.py bdist_wheel # create a wheel
+            uv build
 
       - run:
-          name: upload to pypi
+          name: Upload to PyPI
           command: |
-            pip install twine
-            twine upload dist/*
+            uv tool install twine
+            uv tool run twine upload dist/* -u __token__ -p $PYPI_TOKEN
 
 workflows:
   version: 2
-  build:
+  test:
     jobs:
-      - build
+      - test
 
   deploy:
     jobs:
-      - build:
+      - test:
           filters:
             tags:
               only: /.*/
       - deploy:
           requires:
-            - build
+            - test
           filters:
             tags:
               only: /[0-9]+(\.[0-9]+)*/
