@@ -84,21 +84,32 @@ exclude_lines = [
 ]
 
 [tool.ruff]
-line-length = 88
-target-version = "py39"
+line-length = 90
+target-version = "py312"
 
-[tool.ruff.lint]
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "UP",  # pyupgrade
-]
-ignore = [
-    "E501",  # line too long (handled by formatter)
-]
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+line-ending = "lf"
 
 [tool.ruff.lint.isort]
-known-first-party = ["pymarketstore"]
+case-sensitive = true
+lines-between-types = 1
+lines-after-imports = 2
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+    "tests",
+]
+
+[tool.ruff.lint.isort.sections]
+tests = ["tests"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.1",
+]

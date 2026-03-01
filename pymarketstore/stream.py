@@ -1,11 +1,12 @@
-import msgpack
 import re
+
+import msgpack
 import websocket
+
 from websocket import ABNF
 
 
 class StreamConn:
-
     def __init__(self, endpoint):
         self.endpoint = endpoint
 
@@ -17,9 +18,11 @@ class StreamConn:
         return ws
 
     def _subscribe(self, ws, streams):
-        msg = msgpack.dumps({
-            'streams': streams,
-        })
+        msg = msgpack.dumps(
+            {
+                "streams": streams,
+            }
+        )
         ws.send(msg, opcode=ABNF.OPCODE_BINARY)
 
     def run(self, streams):
@@ -29,7 +32,7 @@ class StreamConn:
             while True:
                 r = ws.recv()
                 msg = msgpack.loads(r)
-                key = msg.get('key')
+                key = msg.get("key")
                 if key is not None:
                     self._dispatch(key, msg)
         finally:

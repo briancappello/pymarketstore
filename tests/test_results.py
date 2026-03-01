@@ -1,7 +1,9 @@
+from ast import literal_eval
+
 import pandas as pd
 
-from ast import literal_eval
 from pymarketstore import results
+
 
 testdata1 = literal_eval(r"""
 {'responses': [{'result': {'data': [b'\xf4\xe8^Z\x00\x00\x00\x000\xe9^Z\x00\x00\x00\x00l\xe9^Z\x00\x00\x00\x00\xa8\xe9^Z\x00\x00\x00\x00\xe4\xe9^Z\x00\x00\x00\x00',
@@ -37,26 +39,28 @@ testdata2 = literal_eval(r"""
  'version': 'dev'}
 """)  # noqa: E501
 
-btc_array = results.decode_responses(testdata1['responses'])[0]['BTC/1Min/OHLCV']
-btc_bytes = testdata1['responses'][0]['result']['data']
-btc_df = pd.DataFrame(btc_array).set_index('Epoch')
-btc_df.index = pd.DatetimeIndex(btc_df.index * 10**9, tz='UTC')
+btc_array = results.decode_responses(testdata1["responses"])[0]["BTC/1Min/OHLCV"]
+btc_bytes = testdata1["responses"][0]["result"]["data"]
+btc_df = pd.DataFrame(btc_array).set_index("Epoch")
+btc_df.index = pd.DatetimeIndex(btc_df.index * 10**9, tz="UTC")
 
 
 def test_results():
     reply = results.QueryReply.from_response(testdata1)
-    assert reply.timezone == 'UTC'
-    assert str(
-        reply) == """QueryReply(QueryResult(DataSet(key=BTC/1Min/OHLCV, shape=(5,), dtype=[('Epoch', '<i8'), ('Open', '<f8'), ('High', '<f8'), ('Low', '<f8'), ('Close', '<f8'), ('Volume', '<f8')])))"""  # noqa
-    assert reply.first().timezone == 'UTC'
-    assert reply.first().symbol == 'BTC'
-    assert reply.first().timeframe == '1Min'
-    assert reply.first().attribute_group == 'OHLCV'
+    assert reply.timezone == "UTC"
+    assert (
+        str(reply)
+        == """QueryReply(QueryResult(DataSet(key=BTC/1Min/OHLCV, shape=(5,), dtype=[('Epoch', '<i8'), ('Open', '<f8'), ('High', '<f8'), ('Low', '<f8'), ('Close', '<f8'), ('Volume', '<f8')])))"""
+    )  # noqa
+    assert reply.first().timezone == "UTC"
+    assert reply.first().symbol == "BTC"
+    assert reply.first().timeframe == "1Min"
+    assert reply.first().attribute_group == "OHLCV"
     assert reply.first().df().shape == (5, 5)
-    assert list(reply.by_symbols().keys()) == ['BTC']
-    assert reply.keys() == ['BTC/1Min/OHLCV']
-    assert reply.symbols() == ['BTC']
-    assert reply.timeframes() == ['1Min']
+    assert list(reply.by_symbols().keys()) == ["BTC"]
+    assert reply.keys() == ["BTC/1Min/OHLCV"]
+    assert reply.symbols() == ["BTC"]
+    assert reply.timeframes() == ["1Min"]
 
     reply = results.QueryReply.from_response(testdata2)
-    assert str(reply.first().df().index.tzinfo) == 'America/New_York'
+    assert str(reply.first().df().index.tzinfo) == "America/New_York"

@@ -1,22 +1,24 @@
 import logging
-import numpy as np
-import pandas as pd
 import re
 
 from typing import *
+
+import numpy as np
+import pandas as pd
 
 from .grpc_client import GRPCClient
 from .jsonrpc_client import JsonRpcClient
 from .params import DataShape, DataType, ListSymbolsFormat, Params
 from .results import QueryReply
 
+
 logger = logging.getLogger(__name__)
 
-http_regex = re.compile(r'^https?://(.+):\d+/rpc')  # http:// or https://
+http_regex = re.compile(r"^https?://(.+):\d+/rpc")  # http:// or https://
 
 
 class Client:
-    def __init__(self, endpoint: str = 'http://localhost:5993/rpc', grpc: bool = False):
+    def __init__(self, endpoint: str = "http://localhost:5993/rpc", grpc: bool = False):
         self.endpoint = endpoint
         if not grpc:
             self.client = JsonRpcClient(self.endpoint)
@@ -26,7 +28,9 @@ class Client:
         # extract the host and initialize GRPC client with default port(5995) for compatibility
         match = re.findall(http_regex, endpoint)
         if match:
-            host = match[0] if match[0] != "" else "localhost"  # default host is "localhost"
+            host = (
+                match[0] if match[0] != "" else "localhost"
+            )  # default host is "localhost"
             self.endpoint = "{}:5995".format(host)  # default port is 5995
         self.client = GRPCClient(self.endpoint)
 
@@ -39,11 +43,12 @@ class Client:
         """
         return self.client.query(params)
 
-    def write(self,
-              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
-              tbk: str,
-              is_variable_length: bool = False,
-              ) -> dict:
+    def write(
+        self,
+        data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+        tbk: str,
+        is_variable_length: bool = False,
+    ) -> dict:
         """
         write data to the MarketStore server
 
@@ -55,7 +60,9 @@ class Client:
         """
         return self.client.write(data, tbk, is_variable_length=is_variable_length)
 
-    def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
+    def list_symbols(
+        self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL
+    ) -> List[str]:
         """
         list symbols stored on the MarketStore server
 
@@ -67,11 +74,12 @@ class Client:
         """
         return self.client.list_symbols(fmt)
 
-    def create(self,
-               tbk: str,
-               data_shape: Union[DataShape, List[Tuple[str, Union[DataType, str]]]],
-               row_type: str = "fixed",
-               ) -> Dict:
+    def create(
+        self,
+        tbk: str,
+        data_shape: Union[DataShape, List[Tuple[str, Union[DataType, str]]]],
+        row_type: str = "fixed",
+    ) -> Dict:
         """
         create a new time bucket key on the MarketStore server
 

@@ -5,9 +5,12 @@ Command-line interface for pymarketstore.
 import sys
 
 import click
+
 from tabulate import tabulate
 
 import pymarketstore as pymkts
+
+from .enums import Freq
 
 
 @click.group()
@@ -19,51 +22,58 @@ def cli():
 
 @cli.command()
 @click.argument("symbol")
-@click.argument("timeframe")
+@click.argument("freq", type=Freq, default=Freq.day)
 @click.option(
-    "--start", "-s",
+    "--start",
+    "-s",
     type=str,
     default=None,
     help="Start date/time (e.g., '2024-01-01', '2024-01-01T09:30:00')",
 )
 @click.option(
-    "--end", "-e",
+    "--end",
+    "-e",
     type=str,
     default=None,
     help="End date/time (e.g., '2024-12-31', '2024-12-31T16:00:00')",
 )
 @click.option(
-    "--limit", "-n",
+    "--limit",
+    "-n",
     type=int,
     default=None,
     help="Limit number of records returned",
 )
 @click.option(
-    "--host", "-h",
+    "--host",
+    "-h",
     type=str,
     default="localhost",
     help="MarketStore server host",
 )
 @click.option(
-    "--port", "-p",
+    "--port",
+    "-p",
     type=int,
     default=5993,
     help="MarketStore server port",
 )
 @click.option(
-    "--grpc", "-g",
+    "--grpc",
+    "-g",
     is_flag=True,
     default=False,
     help="Use gRPC instead of JSON-RPC",
 )
 @click.option(
-    "--format", "-f",
+    "--format",
+    "-f",
     "output_format",
     type=click.Choice(["table", "csv", "json"]),
     default="table",
     help="Output format",
 )
-def query(symbol, timeframe, start, end, limit, host, port, grpc, output_format):
+def query(symbol, freq, start, end, limit, host, port, grpc, output_format):
     """Query OHLCV data for a SYMBOL at a given TIMEFRAME.
 
     Examples:
@@ -74,24 +84,16 @@ def query(symbol, timeframe, start, end, limit, host, port, grpc, output_format)
     endpoint = f"http://{host}:{port}/rpc"
 
     try:
-        client = pymkts.Client(endpoint=endpoint, grpc=grpc)
-        params = pymkts.Params(
-            symbols=symbol,
-            timeframe=timeframe,
-            attrgroup="OHLCV",
-            start=start,
-            end=end,
-            limit=limit,
-        )
+        df = pymkts.Store(endpoint).get(symbol, freq=freq, start_dt=start, end_dt=end)
 
-        reply = client.query(params)
-        df = reply.first().df()
-
-        if df.empty:
-            click.echo(f"No data found for {symbol}/{timeframe}/OHLCV", err=True)
+        if df is None or df.empty:
+            click.echo(f"No data found for {symbol}/{freq}/OHLCV", err=True)
             sys.exit(1)
 
         _output_dataframe(df, output_format)
+
+        print("latest dt")
+        print(pymkts.Store(endpoint).get_latest_dt(symbol, freq=freq))
 
     except ConnectionError as e:
         click.echo(f"Error: Could not connect to MarketStore at {endpoint}", err=True)
@@ -104,31 +106,36 @@ def query(symbol, timeframe, start, end, limit, host, port, grpc, output_format)
 
 @cli.command("list")
 @click.option(
-    "--host", "-h",
+    "--host",
+    "-h",
     type=str,
     default="localhost",
     help="MarketStore server host",
 )
 @click.option(
-    "--port", "-p",
+    "--port",
+    "-p",
     type=int,
     default=5993,
     help="MarketStore server port",
 )
 @click.option(
-    "--freq", "-f",
+    "--freq",
+    "-f",
     type=str,
     default=None,
     help="Filter by timeframe/frequency (e.g., '1D', '1Min')",
 )
 @click.option(
-    "--tbk", "-t",
+    "--tbk",
+    "-t",
     is_flag=True,
     default=False,
     help="Show full time bucket keys (symbol/timeframe/attrgroup)",
 )
 @click.option(
-    "--grpc", "-g",
+    "--grpc",
+    "-g",
     is_flag=True,
     default=False,
     help="Use gRPC instead of JSON-RPC",
@@ -260,7 +267,7 @@ def _is_daily_or_higher(timeframe):
 
 def _format_timestamp(ts, timeframe):
     """Format timestamp based on timeframe.
-    
+
     For daily or higher: just show date (YYYY-MM-DD)
     For intraday: show datetime in America/New_York
     """
@@ -270,13 +277,17 @@ def _format_timestamp(ts, timeframe):
         # Convert to America/New_York timezone
         try:
             import zoneinfo
+
             ny_tz = zoneinfo.ZoneInfo("America/New_York")
         except ImportError:
             # Python < 3.9 fallback (shouldn't happen with requires-python >= 3.9)
             import pytz
+
             ny_tz = pytz.timezone("America/New_York")
-        
-        ts_ny = ts.tz_convert(ny_tz) if ts.tzinfo else ts.tz_localize("UTC").tz_convert(ny_tz)
+
+        ts_ny = (
+            ts.tz_convert(ny_tz) if ts.tzinfo else ts.tz_localize("UTC").tz_convert(ny_tz)
+        )
         return ts_ny.strftime("%Y-%m-%d %H:%M")
 
 
@@ -298,31 +309,36 @@ def _timeframe_sort_key(tf):
 @cli.command()
 @click.argument("symbol")
 @click.option(
-    "--freq", "-f",
+    "--freq",
+    "-f",
     type=str,
     default=None,
     help="Only delete specific timeframe (e.g., '1D', '1Min'). If not specified, deletes all timeframes.",
 )
 @click.option(
-    "--host", "-h",
+    "--host",
+    "-h",
     type=str,
     default="localhost",
     help="MarketStore server host",
 )
 @click.option(
-    "--port", "-p",
+    "--port",
+    "-p",
     type=int,
     default=5993,
     help="MarketStore server port",
 )
 @click.option(
-    "--grpc", "-g",
+    "--grpc",
+    "-g",
     is_flag=True,
     default=False,
     help="Use gRPC instead of JSON-RPC",
 )
 @click.option(
-    "--yes", "-y",
+    "--yes",
+    "-y",
     is_flag=True,
     default=False,
     help="Skip confirmation prompt",
@@ -344,14 +360,17 @@ def delete(symbol, freq, host, port, grpc, yes):
         # Get all TBKs for this symbol
         all_tbks = client.list_symbols(fmt=pymkts.ListSymbolsFormat.TBK)
         symbol_tbks = [
-            tbk for tbk in all_tbks
+            tbk
+            for tbk in all_tbks
             if tbk.startswith(f"{symbol}/")
             and (freq is None or tbk.split("/")[1] == freq)
         ]
 
         if not symbol_tbks:
             if freq:
-                click.echo(f"No data found for {symbol} with timeframe '{freq}'", err=True)
+                click.echo(
+                    f"No data found for {symbol} with timeframe '{freq}'", err=True
+                )
             else:
                 click.echo(f"No data found for {symbol}", err=True)
             sys.exit(1)
@@ -393,19 +412,22 @@ def delete(symbol, freq, host, port, grpc, yes):
 
 @cli.command()
 @click.option(
-    "--host", "-h",
+    "--host",
+    "-h",
     type=str,
     default="localhost",
     help="MarketStore server host",
 )
 @click.option(
-    "--port", "-p",
+    "--port",
+    "-p",
     type=int,
     default=5993,
     help="MarketStore server port",
 )
 @click.option(
-    "--grpc", "-g",
+    "--grpc",
+    "-g",
     is_flag=True,
     default=False,
     help="Use gRPC instead of JSON-RPC",

@@ -1,10 +1,11 @@
 import functools
-import grpc
 import logging
-import numpy as np
-import pandas as pd
 
 from typing import List, Union
+
+import grpc
+import numpy as np
+import pandas as pd
 
 from .params import DataShape, ListSymbolsFormat, Params
 from .proto import marketstore_pb2 as proto
@@ -12,18 +13,18 @@ from .proto import marketstore_pb2_grpc as gp
 from .results import QueryReply
 from .utils import is_iterable, timeseries_data_to_write_request
 
+
 logger = logging.getLogger(__name__)
 
 
 class GRPCClient:
-
-    def __init__(self, endpoint: str = 'localhost:5995'):
+    def __init__(self, endpoint: str = "localhost:5995"):
         self.endpoint = endpoint
 
         # set max message sizes
         options = [
-            ('grpc.max_send_message_length', 1 * 1024 ** 3),  # 1GB
-            ('grpc.max_receive_message_length', 1 * 1024 ** 3),  # 1GB
+            ("grpc.max_send_message_length", 1 * 1024**3),  # 1GB
+            ("grpc.max_receive_message_length", 1 * 1024**3),  # 1GB
         ]
         self.stub = MarketstoreStub(self.endpoint, options)
 
@@ -31,22 +32,29 @@ class GRPCClient:
         reply = self.stub.Query(self._build_query(params))
         return QueryReply.from_grpc_response(reply)
 
-    def write(self,
-              data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
-              tbk: str,
-              is_variable_length: bool = False,
-              ) -> proto.MultiServerResponse:
-        req = proto.MultiWriteRequest(requests=[dict(
-            data=dict(
-                data=timeseries_data_to_write_request(data, tbk),
-                start_index={tbk: 0},
-                lengths={tbk: len(data)},
-            ),
-            is_variable_length=is_variable_length,
-        )])
+    def write(
+        self,
+        data: Union[pd.DataFrame, pd.Series, np.ndarray, np.recarray],
+        tbk: str,
+        is_variable_length: bool = False,
+    ) -> proto.MultiServerResponse:
+        req = proto.MultiWriteRequest(
+            requests=[
+                dict(
+                    data=dict(
+                        data=timeseries_data_to_write_request(data, tbk),
+                        start_index={tbk: 0},
+                        lengths={tbk: len(data)},
+                    ),
+                    is_variable_length=is_variable_length,
+                )
+            ]
+        )
         return self.stub.Write(req)
 
-    def list_symbols(self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL) -> List[str]:
+    def list_symbols(
+        self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL
+    ) -> List[str]:
         if fmt == ListSymbolsFormat.TBK:
             req_format = proto.ListSymbolsRequest.Format.TIME_BUCKET_KEY
         else:
@@ -61,12 +69,18 @@ class GRPCClient:
         data_shape: DataShape,
         row_type: str = "fixed",
     ) -> proto.MultiServerResponse:
-        req = proto.MultiCreateRequest(requests=[proto.CreateRequest(
-            key=tbk,
-            data_shapes=[proto.DataShape(name=col, type=data_type.value)
-                         for col, data_type in data_shape],
-            row_type=row_type,
-        )])
+        req = proto.MultiCreateRequest(
+            requests=[
+                proto.CreateRequest(
+                    key=tbk,
+                    data_shapes=[
+                        proto.DataShape(name=col, type=data_type.value)
+                        for col, data_type in data_shape
+                    ],
+                    row_type=row_type,
+                )
+            ]
+        )
         return self.stub.Create(req)
 
     def destroy(self, tbk: str) -> proto.MultiServerResponse:
@@ -81,7 +95,9 @@ class GRPCClient:
         resp = self.stub.ServerVersion(proto.ServerVersionRequest())
         return resp.version
 
-    def _build_query(self, params: Union[Params, List[Params]]) -> proto.MultiQueryRequest:
+    def _build_query(
+        self, params: Union[Params, List[Params]]
+    ) -> proto.MultiQueryRequest:
         if not is_iterable(params):
             params = [params]
 
@@ -102,14 +118,16 @@ class MarketstoreStub(gp.MarketstoreStub):
                 try:
                     return wrapped_grpc_endpoint(*args, **kwargs)
                 except grpc.RpcError as e:
-                    if e.__class__.__name__ != '_InactiveRpcError':
+                    if e.__class__.__name__ != "_InactiveRpcError":
                         raise
-                raise Exception('Could not connect to marketstore at {}'.format(self.endpoint))
+                raise Exception(
+                    "Could not connect to marketstore at {}".format(self.endpoint)
+                )
 
             return decorator
 
         for attr, value in vars(self).items():
-            if attr.startswith('__'):
+            if attr.startswith("__"):
                 continue
             elif isinstance(value, grpc.UnaryUnaryMultiCallable):
                 setattr(self, attr, error_wrapper(value))

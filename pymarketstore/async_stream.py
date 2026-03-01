@@ -10,13 +10,16 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+
 from collections.abc import Callable
 from typing import Any
 
 import msgpack
 
+
 try:
     import websockets
+
     from websockets.asyncio.client import connect as ws_connect
 except ImportError:
     raise ImportError(
@@ -65,9 +68,11 @@ class AsyncStreamConn:
             A regex pattern matched against the stream key (e.g., ``r"^BTC"``).
 
         """
+
         def decorator(func: Callable) -> Callable:
             self.register(stream_pat, func)
             return func
+
         return decorator
 
     def register(self, stream_pat: str | re.Pattern, func: Callable) -> None:
@@ -165,9 +170,7 @@ class AsyncStreamConn:
                 try:
                     handler(key, data)
                 except Exception:
-                    logger.exception(
-                        "Error in stream handler for key '%s'", key
-                    )
+                    logger.exception("Error in stream handler for key '%s'", key)
 
     async def stop(self) -> None:
         """Stop the streaming connection."""

@@ -1,8 +1,9 @@
-import numpy as np
-
 from unittest.mock import patch
 
+import numpy as np
+
 import pymarketstore as pymkts
+
 from pymarketstore import grpc_client
 from pymarketstore.proto.marketstore_pb2 import MultiQueryRequest, QueryRequest
 
@@ -13,11 +14,11 @@ def test_grpc_client_init():
     assert isinstance(c.stub, grpc_client.MarketstoreStub)
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_query(stub):
     # --- given ---
     c = pymkts.GRPCClient()
-    p = pymkts.Params('BTC', '1Min', 'OHLCV')
+    p = pymkts.Params("BTC", "1Min", "OHLCV")
 
     # --- when ---
     c.query(p)
@@ -26,12 +27,12 @@ def test_query(stub):
     assert c.stub.Query.called == 1
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_create(stub):
     # --- given ---
     c = pymkts.GRPCClient()
-    dtype = [('Epoch', 'i8'), ('Bid', 'f4'), ('Ask', 'f4')]
-    tbk = 'TEST/1Min/TICK'
+    dtype = [("Epoch", "i8"), ("Bid", "f4"), ("Ask", "f4")]
+    tbk = "TEST/1Min/TICK"
 
     # --- when ---
     c.create(tbk=tbk, data_shape=pymkts.DataShape(dtype))
@@ -40,12 +41,12 @@ def test_create(stub):
     assert c.stub.Create.called == 1
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_write(stub):
     # --- given ---
     c = pymkts.GRPCClient()
-    data = np.array([(1, 0)], dtype=[('Epoch', 'i8'), ('Ask', 'f4')])
-    tbk = 'TEST/1Min/TICK'
+    data = np.array([(1, 0)], dtype=[("Epoch", "i8"), ("Ask", "f4")])
+    tbk = "TEST/1Min/TICK"
 
     # --- when ---
     c.write(data, tbk)
@@ -57,17 +58,24 @@ def test_write(stub):
 def test_build_query():
     # --- given ---
     c = pymkts.GRPCClient(endpoint="127.0.0.1:5995")
-    p = pymkts.Params('TSLA', '1Min', 'OHLCV', 1500000000, 4294967296)
+    p = pymkts.Params("TSLA", "1Min", "OHLCV", 1500000000, 4294967296)
 
     # --- when ---
     query = c._build_query([p])
 
     # --- then ---
     assert query == MultiQueryRequest(
-        requests=[QueryRequest(destination="TSLA/1Min/OHLCV", epoch_start=1500000000, epoch_end=4294967296)])
+        requests=[
+            QueryRequest(
+                destination="TSLA/1Min/OHLCV",
+                epoch_start=1500000000,
+                epoch_end=4294967296,
+            )
+        ]
+    )
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_list_symbols(stub):
     # --- given ---
     c = pymkts.GRPCClient()
@@ -79,11 +87,11 @@ def test_list_symbols(stub):
     assert c.stub.ListSymbols.called == 1
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_destroy(stub):
     # --- given ---
     c = pymkts.GRPCClient()
-    tbk = 'TEST/1Min/TICK'
+    tbk = "TEST/1Min/TICK"
 
     # --- when ---
     c.destroy(tbk)
@@ -92,7 +100,7 @@ def test_destroy(stub):
     assert c.stub.Destroy.called == 1
 
 
-@patch('pymarketstore.grpc_client.MarketstoreStub')
+@patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_server_version(stub):
     # --- given ---
     c = pymkts.GRPCClient()
