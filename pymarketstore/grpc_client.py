@@ -53,14 +53,31 @@ class GRPCClient:
         return self.stub.Write(req)
 
     def list_symbols(
-        self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL
+        self,
+        fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL,
+        timeframe: str = None,
+        date: str = None,
     ) -> List[str]:
+        """
+        List symbols stored on the MarketStore server.
+
+        :param fmt: The symbol format to request (SYMBOL or TBK)
+        :param timeframe: Optional filter for symbols with data for this timeframe (e.g. "1Min", "1D")
+        :param date: Optional filter for symbols with data on this date ("YYYY-MM-DD" or epoch seconds as string)
+        :return: List of symbol names or time bucket keys
+        """
         if fmt == ListSymbolsFormat.TBK:
             req_format = proto.ListSymbolsRequest.Format.TIME_BUCKET_KEY
         else:
             req_format = proto.ListSymbolsRequest.Format.SYMBOL
 
-        resp = self.stub.ListSymbols(proto.ListSymbolsRequest(format=req_format))
+        req = proto.ListSymbolsRequest(format=req_format)
+        if timeframe is not None:
+            req.timeframe = timeframe
+        if date is not None:
+            req.date = date
+
+        resp = self.stub.ListSymbols(req)
         return resp.results if resp else []
 
     def create(

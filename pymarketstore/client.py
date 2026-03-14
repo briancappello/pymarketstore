@@ -1,6 +1,7 @@
 import logging
 import re
 
+from datetime import date, datetime
 from typing import *
 
 import numpy as np
@@ -10,6 +11,7 @@ from .grpc_client import GRPCClient
 from .jsonrpc_client import JsonRpcClient
 from .params import DataShape, DataType, ListSymbolsFormat, Params
 from .results import QueryReply
+from .utils import parse_date_to_string
 
 
 logger = logging.getLogger(__name__)
@@ -61,18 +63,41 @@ class Client:
         return self.client.write(data, tbk, is_variable_length=is_variable_length)
 
     def list_symbols(
-        self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL
+        self,
+        fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL,
+        timeframe: str = None,
+        date: Union[int, str, date, datetime] = None,
     ) -> List[str]:
         """
-        list symbols stored on the MarketStore server
+        List symbols stored on the MarketStore server.
 
         Optionally specify `fmt=ListSymbolsFormat.TBK` to get back a list of
-        time bucket keys
+        time bucket keys.
 
-        :param fmt: The symbol format to request
-        :type fmt: ListSymbolsFormat
+        :param fmt: The symbol format to request (SYMBOL or TBK)
+        :param timeframe: Optional filter for symbols with data for this timeframe (e.g. "1Min", "1D")
+        :param date: Optional filter for symbols with data on this date.
+            Accepts: int (unix epoch seconds), str ("YYYY-MM-DD"), date, or datetime
+        :return: List of symbol names or time bucket keys
+
+        Examples::
+
+            # List all symbols
+            client.list_symbols()
+
+            # List symbols with 1Min data
+            client.list_symbols(timeframe="1Min")
+
+            # List symbols with data on a specific date (multiple formats supported)
+            client.list_symbols(date="2024-01-15")
+            client.list_symbols(date=1705276800)
+            client.list_symbols(date=datetime(2024, 1, 15))
+
+            # Combine filters
+            client.list_symbols(timeframe="1Min", date="2024-01-15")
         """
-        return self.client.list_symbols(fmt)
+        date_str = parse_date_to_string(date)
+        return self.client.list_symbols(fmt, timeframe=timeframe, date=date_str)
 
     def create(
         self,

@@ -1,7 +1,43 @@
+from datetime import date, datetime, timezone
 from typing import Any, Union
 
 import numpy as np
 import pandas as pd
+
+
+def parse_date_to_string(
+    value: Union[int, str, date, datetime, pd.Timestamp, None],
+) -> Union[str, None]:
+    """
+    Convert a date value to a string format accepted by the server.
+
+    The server accepts either "YYYY-MM-DD" format or unix epoch seconds as a string.
+    This function normalizes various input types to "YYYY-MM-DD" format for consistency.
+
+    :param value: Date as int (epoch seconds), str (YYYY-MM-DD), date, or datetime
+    :return: Date string in "YYYY-MM-DD" format, or None if value is None
+    """
+    if value is None:
+        return None
+
+    # Try parsing as epoch seconds string, then YYYY-MM-DD
+    dt = value
+    if isinstance(value, (int, str)):
+        try:
+            dt = datetime.fromtimestamp(int(value), tz=timezone.utc)
+        except ValueError:
+            try:
+                dt = datetime.strptime(value, "%Y-%m-%d")
+            except ValueError:
+                pass
+
+    # now it's a pd.Timestamp, datetime, or date
+    try:
+        return dt.strftime("%Y-%m-%d")
+    except:
+        raise TypeError(
+            f"date must be int (epoch seconds), str (YYYY-MM-DD), date, or datetime, got {value} ({type(value)})"
+        )
 
 
 def get_timestamp(value: Union[int, str]) -> Union[pd.Timestamp, None]:

@@ -13,12 +13,7 @@ from google.protobuf.internal import builder as _builder
 
 
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    1,
-    "",
-    "pymarketstore/proto/marketstore.proto",
+    _runtime_version.Domain.PUBLIC, 6, 31, 1, "", "pymarketstore/proto/marketstore.proto"
 )
 # @@protoc_insertion_point(imports)
 
@@ -26,7 +21,7 @@ _sym_db = _symbol_database.Default()
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n%pymarketstore/proto/marketstore.proto\x12\x05proto"\'\n\tDataShape\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t"\x90\x02\n\x11NumpyMultiDataset\x12!\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\x13.proto.NumpyDataset\x12=\n\x0bstart_index\x18\x02 \x03(\x0b\x32(.proto.NumpyMultiDataset.StartIndexEntry\x12\x36\n\x07lengths\x18\x03 \x03(\x0b\x32%.proto.NumpyMultiDataset.LengthsEntry\x1a\x31\n\x0fStartIndexEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\x1a.\n\x0cLengthsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01"\x86\x01\n\x0cNumpyDataset\x12\x14\n\x0c\x63olumn_types\x18\x01 \x03(\t\x12\x14\n\x0c\x63olumn_names\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_data\x18\x03 \x03(\x0c\x12\x0e\n\x06length\x18\x04 \x01(\x05\x12%\n\x0b\x64\x61ta_shapes\x18\x05 \x03(\x0b\x32\x10.proto.DataShape"U\n\rCreateRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12%\n\x0b\x64\x61ta_shapes\x18\x02 \x03(\x0b\x32\x10.proto.DataShape\x12\x10\n\x08row_type\x18\x03 \x01(\t"<\n\x12MultiCreateRequest\x12&\n\x08requests\x18\x01 \x03(\x0b\x32\x14.proto.CreateRequest":\n\x11MultiQueryRequest\x12%\n\x08requests\x18\x01 \x03(\x0b\x32\x13.proto.QueryRequest"\xa0\x02\n\x0cQueryRequest\x12\x18\n\x10is_sql_statement\x18\x01 \x01(\x08\x12\x15\n\rsql_statement\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65stination\x18\x03 \x01(\t\x12\x14\n\x0ckey_category\x18\x04 \x01(\t\x12\x13\n\x0b\x65poch_start\x18\x05 \x01(\x03\x12\x19\n\x11\x65poch_start_nanos\x18\x06 \x01(\x03\x12\x11\n\tepoch_end\x18\x07 \x01(\x03\x12\x17\n\x0f\x65poch_end_nanos\x18\x08 \x01(\x03\x12\x1a\n\x12limit_record_count\x18\t \x01(\x05\x12\x18\n\x10limit_from_start\x18\n \x01(\x08\x12\x0f\n\x07\x63olumns\x18\x0b \x03(\t\x12\x11\n\tfunctions\x18\x0c \x03(\t"`\n\x12MultiQueryResponse\x12\'\n\tresponses\x18\x01 \x03(\x0b\x32\x14.proto.QueryResponse\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x10\n\x08timezone\x18\x03 \x01(\t"9\n\rQueryResponse\x12(\n\x06result\x18\x01 \x01(\x0b\x32\x18.proto.NumpyMultiDataset":\n\x11MultiWriteRequest\x12%\n\x08requests\x18\x01 \x03(\x0b\x32\x13.proto.WriteRequest"R\n\x0cWriteRequest\x12&\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\x18.proto.NumpyMultiDataset\x12\x1a\n\x12is_variable_length\x18\x02 \x01(\x08"?\n\x13MultiServerResponse\x12(\n\tresponses\x18\x01 \x03(\x0b\x32\x15.proto.ServerResponse"0\n\x0eServerResponse\x12\r\n\x05\x65rror\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t"6\n\x0fMultiKeyRequest\x12#\n\x08requests\x18\x01 \x03(\x0b\x32\x11.proto.KeyRequest"\x19\n\nKeyRequest\x12\x0b\n\x03key\x18\x01 \x01(\t"q\n\x12ListSymbolsRequest\x12\x30\n\x06\x66ormat\x18\x01 \x01(\x0e\x32 .proto.ListSymbolsRequest.Format")\n\x06\x46ormat\x12\n\n\x06SYMBOL\x10\x00\x12\x13\n\x0fTIME_BUCKET_KEY\x10\x01"&\n\x13ListSymbolsResponse\x12\x0f\n\x07results\x18\x01 \x03(\t"\x16\n\x14ServerVersionRequest"(\n\x15ServerVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t*\xc4\x01\n\x08\x44\x61taType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07\x46LOAT32\x10\x01\x12\t\n\x05INT32\x10\x02\x12\x0b\n\x07\x46LOAT64\x10\x03\x12\t\n\x05INT64\x10\x04\x12\t\n\x05\x45POCH\x10\x05\x12\x08\n\x04\x42YTE\x10\x06\x12\x08\n\x04\x42OOL\x10\x07\x12\x08\n\x04NONE\x10\x08\x12\n\n\x06STRING\x10\t\x12\t\n\x05INT16\x10\n\x12\t\n\x05UINT8\x10\x0b\x12\n\n\x06UINT16\x10\x0c\x12\n\n\x06UINT32\x10\r\x12\n\n\x06UINT64\x10\x0e\x12\x0c\n\x08STRING16\x10\x0f\x32\x9c\x03\n\x0bMarketstore\x12<\n\x05Query\x12\x18.proto.MultiQueryRequest\x1a\x19.proto.MultiQueryResponse\x12?\n\x06\x43reate\x12\x19.proto.MultiCreateRequest\x1a\x1a.proto.MultiServerResponse\x12=\n\x05Write\x12\x18.proto.MultiWriteRequest\x1a\x1a.proto.MultiServerResponse\x12=\n\x07\x44\x65stroy\x12\x16.proto.MultiKeyRequest\x1a\x1a.proto.MultiServerResponse\x12\x44\n\x0bListSymbols\x12\x19.proto.ListSymbolsRequest\x1a\x1a.proto.ListSymbolsResponse\x12J\n\rServerVersion\x12\x1b.proto.ServerVersionRequest\x1a\x1c.proto.ServerVersionResponseb\x06proto3'
+    b'\n%pymarketstore/proto/marketstore.proto\x12\x05proto"\'\n\tDataShape\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t"\x90\x02\n\x11NumpyMultiDataset\x12!\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\x13.proto.NumpyDataset\x12=\n\x0bstart_index\x18\x02 \x03(\x0b\x32(.proto.NumpyMultiDataset.StartIndexEntry\x12\x36\n\x07lengths\x18\x03 \x03(\x0b\x32%.proto.NumpyMultiDataset.LengthsEntry\x1a\x31\n\x0fStartIndexEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\x1a.\n\x0cLengthsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01"\x86\x01\n\x0cNumpyDataset\x12\x14\n\x0c\x63olumn_types\x18\x01 \x03(\t\x12\x14\n\x0c\x63olumn_names\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_data\x18\x03 \x03(\x0c\x12\x0e\n\x06length\x18\x04 \x01(\x05\x12%\n\x0b\x64\x61ta_shapes\x18\x05 \x03(\x0b\x32\x10.proto.DataShape"U\n\rCreateRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12%\n\x0b\x64\x61ta_shapes\x18\x02 \x03(\x0b\x32\x10.proto.DataShape\x12\x10\n\x08row_type\x18\x03 \x01(\t"<\n\x12MultiCreateRequest\x12&\n\x08requests\x18\x01 \x03(\x0b\x32\x14.proto.CreateRequest":\n\x11MultiQueryRequest\x12%\n\x08requests\x18\x01 \x03(\x0b\x32\x13.proto.QueryRequest"\xa0\x02\n\x0cQueryRequest\x12\x18\n\x10is_sql_statement\x18\x01 \x01(\x08\x12\x15\n\rsql_statement\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65stination\x18\x03 \x01(\t\x12\x14\n\x0ckey_category\x18\x04 \x01(\t\x12\x13\n\x0b\x65poch_start\x18\x05 \x01(\x03\x12\x19\n\x11\x65poch_start_nanos\x18\x06 \x01(\x03\x12\x11\n\tepoch_end\x18\x07 \x01(\x03\x12\x17\n\x0f\x65poch_end_nanos\x18\x08 \x01(\x03\x12\x1a\n\x12limit_record_count\x18\t \x01(\x05\x12\x18\n\x10limit_from_start\x18\n \x01(\x08\x12\x0f\n\x07\x63olumns\x18\x0b \x03(\t\x12\x11\n\tfunctions\x18\x0c \x03(\t"`\n\x12MultiQueryResponse\x12\'\n\tresponses\x18\x01 \x03(\x0b\x32\x14.proto.QueryResponse\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x10\n\x08timezone\x18\x03 \x01(\t"9\n\rQueryResponse\x12(\n\x06result\x18\x01 \x01(\x0b\x32\x18.proto.NumpyMultiDataset":\n\x11MultiWriteRequest\x12%\n\x08requests\x18\x01 \x03(\x0b\x32\x13.proto.WriteRequest"R\n\x0cWriteRequest\x12&\n\x04\x64\x61ta\x18\x01 \x01(\x0b\x32\x18.proto.NumpyMultiDataset\x12\x1a\n\x12is_variable_length\x18\x02 \x01(\x08"?\n\x13MultiServerResponse\x12(\n\tresponses\x18\x01 \x03(\x0b\x32\x15.proto.ServerResponse"0\n\x0eServerResponse\x12\r\n\x05\x65rror\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t"6\n\x0fMultiKeyRequest\x12#\n\x08requests\x18\x01 \x03(\x0b\x32\x11.proto.KeyRequest"\x19\n\nKeyRequest\x12\x0b\n\x03key\x18\x01 \x01(\t"\x92\x01\n\x12ListSymbolsRequest\x12\x30\n\x06\x66ormat\x18\x01 \x01(\x0e\x32 .proto.ListSymbolsRequest.Format\x12\x11\n\ttimeframe\x18\x02 \x01(\t\x12\x0c\n\x04\x64\x61te\x18\x03 \x01(\t")\n\x06\x46ormat\x12\n\n\x06SYMBOL\x10\x00\x12\x13\n\x0fTIME_BUCKET_KEY\x10\x01"&\n\x13ListSymbolsResponse\x12\x0f\n\x07results\x18\x01 \x03(\t"\x16\n\x14ServerVersionRequest"(\n\x15ServerVersionResponse\x12\x0f\n\x07version\x18\x01 \x01(\t*\xc4\x01\n\x08\x44\x61taType\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07\x46LOAT32\x10\x01\x12\t\n\x05INT32\x10\x02\x12\x0b\n\x07\x46LOAT64\x10\x03\x12\t\n\x05INT64\x10\x04\x12\t\n\x05\x45POCH\x10\x05\x12\x08\n\x04\x42YTE\x10\x06\x12\x08\n\x04\x42OOL\x10\x07\x12\x08\n\x04NONE\x10\x08\x12\n\n\x06STRING\x10\t\x12\t\n\x05INT16\x10\n\x12\t\n\x05UINT8\x10\x0b\x12\n\n\x06UINT16\x10\x0c\x12\n\n\x06UINT32\x10\r\x12\n\n\x06UINT64\x10\x0e\x12\x0c\n\x08STRING16\x10\x0f\x32\x9c\x03\n\x0bMarketstore\x12<\n\x05Query\x12\x18.proto.MultiQueryRequest\x1a\x19.proto.MultiQueryResponse\x12?\n\x06\x43reate\x12\x19.proto.MultiCreateRequest\x1a\x1a.proto.MultiServerResponse\x12=\n\x05Write\x12\x18.proto.MultiWriteRequest\x1a\x1a.proto.MultiServerResponse\x12=\n\x07\x44\x65stroy\x12\x16.proto.MultiKeyRequest\x1a\x1a.proto.MultiServerResponse\x12\x44\n\x0bListSymbols\x12\x19.proto.ListSymbolsRequest\x1a\x1a.proto.ListSymbolsResponse\x12J\n\rServerVersion\x12\x1b.proto.ServerVersionRequest\x1a\x1c.proto.ServerVersionResponseB\'Z%github.com/alpacahq/marketstore/protob\x06proto3'
 )
 
 _globals = globals()
@@ -35,13 +30,16 @@ _builder.BuildTopDescriptorsAndMessages(
     DESCRIPTOR, "pymarketstore.proto.marketstore_pb2", _globals
 )
 if not _descriptor._USE_C_DESCRIPTORS:
-    DESCRIPTOR._loaded_options = None
+    _globals["DESCRIPTOR"]._loaded_options = None
+    _globals[
+        "DESCRIPTOR"
+    ]._serialized_options = b"Z%github.com/alpacahq/marketstore/proto"
     _globals["_NUMPYMULTIDATASET_STARTINDEXENTRY"]._loaded_options = None
     _globals["_NUMPYMULTIDATASET_STARTINDEXENTRY"]._serialized_options = b"8\001"
     _globals["_NUMPYMULTIDATASET_LENGTHSENTRY"]._loaded_options = None
     _globals["_NUMPYMULTIDATASET_LENGTHSENTRY"]._serialized_options = b"8\001"
-    _globals["_DATATYPE"]._serialized_start = 1722
-    _globals["_DATATYPE"]._serialized_end = 1918
+    _globals["_DATATYPE"]._serialized_start = 1756
+    _globals["_DATATYPE"]._serialized_end = 1952
     _globals["_DATASHAPE"]._serialized_start = 48
     _globals["_DATASHAPE"]._serialized_end = 87
     _globals["_NUMPYMULTIDATASET"]._serialized_start = 90
@@ -76,16 +74,16 @@ if not _descriptor._USE_C_DESCRIPTORS:
     _globals["_MULTIKEYREQUEST"]._serialized_end = 1471
     _globals["_KEYREQUEST"]._serialized_start = 1473
     _globals["_KEYREQUEST"]._serialized_end = 1498
-    _globals["_LISTSYMBOLSREQUEST"]._serialized_start = 1500
-    _globals["_LISTSYMBOLSREQUEST"]._serialized_end = 1613
-    _globals["_LISTSYMBOLSREQUEST_FORMAT"]._serialized_start = 1572
-    _globals["_LISTSYMBOLSREQUEST_FORMAT"]._serialized_end = 1613
-    _globals["_LISTSYMBOLSRESPONSE"]._serialized_start = 1615
-    _globals["_LISTSYMBOLSRESPONSE"]._serialized_end = 1653
-    _globals["_SERVERVERSIONREQUEST"]._serialized_start = 1655
-    _globals["_SERVERVERSIONREQUEST"]._serialized_end = 1677
-    _globals["_SERVERVERSIONRESPONSE"]._serialized_start = 1679
-    _globals["_SERVERVERSIONRESPONSE"]._serialized_end = 1719
-    _globals["_MARKETSTORE"]._serialized_start = 1921
-    _globals["_MARKETSTORE"]._serialized_end = 2333
+    _globals["_LISTSYMBOLSREQUEST"]._serialized_start = 1501
+    _globals["_LISTSYMBOLSREQUEST"]._serialized_end = 1647
+    _globals["_LISTSYMBOLSREQUEST_FORMAT"]._serialized_start = 1606
+    _globals["_LISTSYMBOLSREQUEST_FORMAT"]._serialized_end = 1647
+    _globals["_LISTSYMBOLSRESPONSE"]._serialized_start = 1649
+    _globals["_LISTSYMBOLSRESPONSE"]._serialized_end = 1687
+    _globals["_SERVERVERSIONREQUEST"]._serialized_start = 1689
+    _globals["_SERVERVERSIONREQUEST"]._serialized_end = 1711
+    _globals["_SERVERVERSIONRESPONSE"]._serialized_start = 1713
+    _globals["_SERVERVERSIONRESPONSE"]._serialized_end = 1753
+    _globals["_MARKETSTORE"]._serialized_start = 1955
+    _globals["_MARKETSTORE"]._serialized_end = 2367
 # @@protoc_insertion_point(module_scope)

@@ -1,8 +1,19 @@
 from ast import literal_eval
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
+import numpy as np
 import pandas as pd
+import pytest
 
 from pymarketstore import results
+from pymarketstore.results import (
+    DataSet,
+    QueryReply,
+    QueryResult,
+    decode,
+    decode_grpc_responses,
+)
 
 
 testdata1 = literal_eval(r"""
@@ -64,3 +75,156 @@ def test_results():
 
     reply = results.QueryReply.from_response(testdata2)
     assert str(reply.first().df().index.tzinfo) == "America/New_York"
+
+
+# ---------------------------------------------------------------------------
+# decode() unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestDecode:
+    def test_basic_decode(self):
+        """decode() correctly builds a structured numpy array from column data."""
+        epochs = np.array([1000, 2000, 3000], dtype="i8")
+        prices = np.array([100.0, 200.0, 300.0], dtype="f8")
+
+        arr = decode(
+            column_names=["Epoch", "Price"],
+            column_types=["i8", "f8"],
+            column_data=[bytes(memoryview(epochs)), bytes(memoryview(prices))],
+            data_length=3,
+        )
+
+        assert arr.dtype.names == ("Epoch", "Price")
+        assert list(arr["Epoch"]) == [1000, 2000, 3000]
+        assert list(arr["Price"]) == [100.0, 200.0, 300.0]
+
+    def test_decode_single_column(self):
+        data = np.array([42], dtype="i8")
+        arr = decode(
+            column_names=["Val"],
+            column_types=["i8"],
+            column_data=[bytes(memoryview(data))],
+            data_length=1,
+        )
+        assert arr["Val"][0] == 42
+
+
+# ---------------------------------------------------------------------------
+# decode_grpc_responses()
+# ---------------------------------------------------------------------------
+
+
+class TestDecodeGrpcResponses:
+    def test_single_symbol(self):
+        """Decode a gRPC response with one symbol."""
+        # Build the same data as testdata1 but in gRPC object form
+        epochs = np.array([1518048500, 1518048560, 1518048620], dtype="i8")
+        opens = np.array([100.0, 101.0, 102.0], dtype="f8")
+
+        data_ns = SimpleNamespace(
+            column_names=["Epoch", "Open"],
+            column_types=["i8", "f8"],
+            column_data=[bytes(memoryview(epochs)), bytes(memoryview(opens))],
+            length=3,
+        )
+        packed_ns = SimpleNamespace(
+            data=data_ns,
+            start_index={"BTC/1Min/OHLCV:Symbol/Timeframe/AttributeGroup": 0},
+            lengths={"BTC/1Min/OHLCV:Symbol/Timeframe/AttributeGroup": 3},
+        )
+        response = SimpleNamespace(result=packed_ns)
+
+        decoded = decode_grpc_responses([response])
+
+        assert len(decoded) == 1
+        assert "BTC/1Min/OHLCV" in decoded[0]
+        arr = decoded[0]["BTC/1Min/OHLCV"]
+        assert len(arr) == 3
+        assert list(arr["Open"]) == [100.0, 101.0, 102.0]
+
+    def test_from_grpc_response(self):
+        """QueryReply.from_grpc_response() builds a proper QueryReply."""
+        epochs = np.array([1518048500], dtype="i8")
+        opens = np.array([100.0], dtype="f8")
+
+        data_ns = SimpleNamespace(
+            column_names=["Epoch", "Open"],
+            column_types=["i8", "f8"],
+            column_data=[bytes(memoryview(epochs)), bytes(memoryview(opens))],
+            length=1,
+        )
+        packed_ns = SimpleNamespace(
+            data=data_ns,
+            start_index={"BTC/1D/OHLCV:Symbol/Timeframe/AttributeGroup": 0},
+            lengths={"BTC/1D/OHLCV:Symbol/Timeframe/AttributeGroup": 1},
+        )
+        grpc_resp = SimpleNamespace(
+            responses=[SimpleNamespace(result=packed_ns)],
+            timezone="UTC",
+        )
+
+        reply = QueryReply.from_grpc_response(grpc_resp)
+
+        assert reply.timezone == "UTC"
+        assert reply.first().symbol == "BTC"
+        assert reply.first().timeframe == "1D"
+        assert reply.first().attribute_group == "OHLCV"
+        assert reply.first().df().shape == (1, 1)
+
+
+# ---------------------------------------------------------------------------
+# DataSet
+# ---------------------------------------------------------------------------
+
+
+class TestDataSet:
+    def test_repr(self):
+        arr = np.array([(1, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        ds = DataSet(arr, "BTC/1Min/OHLCV", "UTC")
+        r = repr(ds)
+        assert "BTC/1Min/OHLCV" in r
+        assert "(1,)" in r
+
+    def test_df_utc_timezone(self):
+        arr = np.array([(1518048500, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        ds = DataSet(arr, "BTC/1Min/OHLCV", "UTC")
+        df = ds.df()
+        assert df.shape == (1, 1)
+        assert str(df.index.tz) == "UTC"
+
+    def test_df_non_utc_timezone(self):
+        arr = np.array([(1518048500, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        ds = DataSet(arr, "BTC/1Min/OHLCV", "America/New_York")
+        df = ds.df()
+        assert str(df.index.tz) == "America/New_York"
+
+
+# ---------------------------------------------------------------------------
+# QueryResult
+# ---------------------------------------------------------------------------
+
+
+class TestQueryResult:
+    def test_keys_and_first(self):
+        arr = np.array([(1, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        qr = QueryResult(
+            {"BTC/1Min/OHLCV": arr, "ETH/1Min/OHLCV": arr},
+            timezone="UTC",
+        )
+        assert set(qr.keys()) == {"BTC/1Min/OHLCV", "ETH/1Min/OHLCV"}
+        assert qr.first().key in {"BTC/1Min/OHLCV", "ETH/1Min/OHLCV"}
+
+    def test_all_returns_all_datasets(self):
+        arr = np.array([(1, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        qr = QueryResult({"BTC/1Min/OHLCV": arr}, timezone="UTC")
+        all_ds = qr.all()
+        assert "BTC/1Min/OHLCV" in all_ds
+        assert isinstance(all_ds["BTC/1Min/OHLCV"], DataSet)
+
+    def test_repr(self):
+        arr = np.array([(1, 100.0)], dtype=[("Epoch", "i8"), ("Open", "f8")])
+        qr = QueryResult({"BTC/1Min/OHLCV": arr}, timezone="UTC")
+        r = repr(qr)
+        assert "QueryResult" in r
+        assert "BTC/1Min/OHLCV" in r

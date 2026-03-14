@@ -1,10 +1,11 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 import pymarketstore as pymkts
 
 from pymarketstore import grpc_client
+from pymarketstore.proto import marketstore_pb2 as proto
 from pymarketstore.proto.marketstore_pb2 import MultiQueryRequest, QueryRequest
 
 
@@ -20,11 +21,44 @@ def test_query(stub):
     c = pymkts.GRPCClient()
     p = pymkts.Params("BTC", "1Min", "OHLCV")
 
+    mock_response = MagicMock()
+    mock_response.timezone = "UTC"
+    mock_response.responses = []
+    c.stub.Query.return_value = mock_response
+
     # --- when ---
-    c.query(p)
+    result = c.query(p)
 
     # --- then ---
-    assert c.stub.Query.called == 1
+    c.stub.Query.assert_called_once()
+    call_arg = c.stub.Query.call_args[0][0]
+    assert isinstance(call_arg, MultiQueryRequest)
+    assert len(call_arg.requests) == 1
+    assert call_arg.requests[0].destination == "BTC/1Min/OHLCV"
+    assert isinstance(result, pymkts.results.QueryReply)
+    assert result.timezone == "UTC"
+
+
+@patch("pymarketstore.grpc_client.MarketstoreStub")
+def test_query_with_multiple_params(stub):
+    """query() with a list of Params should build a MultiQueryRequest with all of them."""
+    c = pymkts.GRPCClient()
+    p1 = pymkts.Params("BTC", "1Min", "OHLCV")
+    p2 = pymkts.Params("ETH", "1D", "OHLCV", 1000000000, 2000000000)
+
+    mock_response = MagicMock()
+    mock_response.timezone = "UTC"
+    mock_response.responses = []
+    c.stub.Query.return_value = mock_response
+
+    c.query([p1, p2])
+
+    call_arg = c.stub.Query.call_args[0][0]
+    assert len(call_arg.requests) == 2
+    assert call_arg.requests[0].destination == "BTC/1Min/OHLCV"
+    assert call_arg.requests[1].destination == "ETH/1D/OHLCV"
+    assert call_arg.requests[1].epoch_start == 1000000000
+    assert call_arg.requests[1].epoch_end == 2000000000
 
 
 @patch("pymarketstore.grpc_client.MarketstoreStub")
@@ -34,11 +68,24 @@ def test_create(stub):
     dtype = [("Epoch", "i8"), ("Bid", "f4"), ("Ask", "f4")]
     tbk = "TEST/1Min/TICK"
 
+    mock_response = MagicMock()
+    c.stub.Create.return_value = mock_response
+
     # --- when ---
-    c.create(tbk=tbk, data_shape=pymkts.DataShape(dtype))
+    result = c.create(tbk=tbk, data_shape=pymkts.DataShape(dtype))
 
     # --- then ---
-    assert c.stub.Create.called == 1
+    c.stub.Create.assert_called_once()
+    call_arg = c.stub.Create.call_args[0][0]
+    assert isinstance(call_arg, proto.MultiCreateRequest)
+    assert len(call_arg.requests) == 1
+    req = call_arg.requests[0]
+    assert req.key == "TEST/1Min/TICK"
+    assert req.row_type == "fixed"
+    # Verify data shapes were correctly built
+    shapes = {ds.name: ds.type for ds in req.data_shapes}
+    assert shapes == {"Epoch": "INT64", "Bid": "FLOAT32", "Ask": "FLOAT32"}
+    assert result is mock_response
 
 
 @patch("pymarketstore.grpc_client.MarketstoreStub")
@@ -48,11 +95,25 @@ def test_write(stub):
     data = np.array([(1, 0)], dtype=[("Epoch", "i8"), ("Ask", "f4")])
     tbk = "TEST/1Min/TICK"
 
+    mock_response = MagicMock()
+    c.stub.Write.return_value = mock_response
+
     # --- when ---
-    c.write(data, tbk)
+    result = c.write(data, tbk)
 
     # --- then ---
-    assert c.stub.Write.called == 1
+    c.stub.Write.assert_called_once()
+    call_arg = c.stub.Write.call_args[0][0]
+    assert isinstance(call_arg, proto.MultiWriteRequest)
+    assert len(call_arg.requests) == 1
+    req = call_arg.requests[0]
+    assert req.is_variable_length is False
+    assert req.data.start_index == {"TEST/1Min/TICK": 0}
+    assert req.data.lengths == {"TEST/1Min/TICK": 1}
+    # Verify the data payload was serialized
+    assert req.data.data.column_names == ["Epoch", "Ask"]
+    assert req.data.data.column_types == ["i8", "f4"]
+    assert result is mock_response
 
 
 def test_build_query():
@@ -76,15 +137,64 @@ def test_build_query():
 
 
 @patch("pymarketstore.grpc_client.MarketstoreStub")
-def test_list_symbols(stub):
+def test_list_symbols_default(stub):
     # --- given ---
     c = pymkts.GRPCClient()
+    mock_response = MagicMock()
+    mock_response.results = ["AAPL", "TSLA"]
+    c.stub.ListSymbols.return_value = mock_response
 
     # --- when ---
-    c.list_symbols()
+    result = c.list_symbols()
 
     # --- then ---
-    assert c.stub.ListSymbols.called == 1
+    c.stub.ListSymbols.assert_called_once()
+    call_arg = c.stub.ListSymbols.call_args[0][0]
+    assert isinstance(call_arg, proto.ListSymbolsRequest)
+    assert call_arg.format == proto.ListSymbolsRequest.Format.SYMBOL
+    assert result == ["AAPL", "TSLA"]
+
+
+@patch("pymarketstore.grpc_client.MarketstoreStub")
+def test_list_symbols_tbk_format(stub):
+    """list_symbols with TBK format should send Format.TIME_BUCKET_KEY."""
+    c = pymkts.GRPCClient()
+    mock_response = MagicMock()
+    mock_response.results = ["AAPL/1Min/OHLCV"]
+    c.stub.ListSymbols.return_value = mock_response
+
+    result = c.list_symbols(fmt=pymkts.ListSymbolsFormat.TBK)
+
+    call_arg = c.stub.ListSymbols.call_args[0][0]
+    assert call_arg.format == proto.ListSymbolsRequest.Format.TIME_BUCKET_KEY
+    assert result == ["AAPL/1Min/OHLCV"]
+
+
+@patch("pymarketstore.grpc_client.MarketstoreStub")
+def test_list_symbols_with_timeframe_and_date(stub):
+    """list_symbols should forward timeframe and date to the protobuf request."""
+    c = pymkts.GRPCClient()
+    mock_response = MagicMock()
+    mock_response.results = ["BTC"]
+    c.stub.ListSymbols.return_value = mock_response
+
+    result = c.list_symbols(timeframe="1Min", date="2024-01-15")
+
+    call_arg = c.stub.ListSymbols.call_args[0][0]
+    assert call_arg.timeframe == "1Min"
+    assert call_arg.date == "2024-01-15"
+    assert result == ["BTC"]
+
+
+@patch("pymarketstore.grpc_client.MarketstoreStub")
+def test_list_symbols_empty_response(stub):
+    """list_symbols should return empty list when server returns falsy response."""
+    c = pymkts.GRPCClient()
+    c.stub.ListSymbols.return_value = None
+
+    result = c.list_symbols()
+
+    assert result == []
 
 
 @patch("pymarketstore.grpc_client.MarketstoreStub")
@@ -92,21 +202,40 @@ def test_destroy(stub):
     # --- given ---
     c = pymkts.GRPCClient()
     tbk = "TEST/1Min/TICK"
+    mock_response = MagicMock()
+    c.stub.Destroy.return_value = mock_response
 
     # --- when ---
-    c.destroy(tbk)
+    result = c.destroy(tbk)
 
     # --- then ---
-    assert c.stub.Destroy.called == 1
+    c.stub.Destroy.assert_called_once()
+    call_arg = c.stub.Destroy.call_args[0][0]
+    assert isinstance(call_arg, proto.MultiKeyRequest)
+    assert len(call_arg.requests) == 1
+    assert call_arg.requests[0].key == "TEST/1Min/TICK"
+    assert result is mock_response
 
 
 @patch("pymarketstore.grpc_client.MarketstoreStub")
 def test_server_version(stub):
     # --- given ---
     c = pymkts.GRPCClient()
+    mock_response = MagicMock()
+    mock_response.version = "2.0.0"
+    c.stub.ServerVersion.return_value = mock_response
 
     # --- when ---
-    c.server_version()
+    result = c.server_version()
 
     # --- then ---
-    assert c.stub.ServerVersion.called == 1
+    c.stub.ServerVersion.assert_called_once()
+    call_arg = c.stub.ServerVersion.call_args[0][0]
+    assert isinstance(call_arg, proto.ServerVersionRequest)
+    assert result == "2.0.0"
+
+
+@patch("pymarketstore.grpc_client.MarketstoreStub")
+def test_repr(stub):
+    c = pymkts.GRPCClient("myhost:5995")
+    assert repr(c) == 'GRPCClient("myhost:5995")'

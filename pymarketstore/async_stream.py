@@ -43,6 +43,11 @@ class AsyncStreamConn:
         The WebSocket endpoint URL (e.g., ``"ws://localhost:5993/ws"``).
     reconnect_delay : float, default 3.0
         Seconds to wait before attempting reconnection after a disconnect.
+    max_subscription_retries : int, default 3
+        Maximum number of consecutive subscription rejections (server-side
+        ``"error"`` responses) before the error is re-raised and ``run()``
+        exits.  Network-level disconnects are not counted against this limit
+        and will always trigger a reconnect attempt.
 
     """
 
@@ -50,13 +55,16 @@ class AsyncStreamConn:
         self,
         endpoint: str,
         reconnect_delay: float = 3.0,
+        max_subscription_retries: int = 3,
     ) -> None:
         self.endpoint = endpoint
         self.reconnect_delay = reconnect_delay
+        self.max_subscription_retries = max_subscription_retries
         self._handlers: dict[re.Pattern, Callable] = {}
         self._ws: Any | None = None
         self._running = False
         self._streams: list[str] = []
+        self._subscription_failures = 0
 
     def on(self, stream_pat: str) -> Callable:
         """
@@ -115,6 +123,7 @@ class AsyncStreamConn:
         """
         self._streams = streams
         self._running = True
+        self._subscription_failures = 0
 
         while self._running:
             try:
@@ -122,6 +131,25 @@ class AsyncStreamConn:
             except asyncio.CancelledError:
                 logger.info("AsyncStreamConn cancelled")
                 break
+            except ConnectionError:
+                if not self._running:
+                    break
+                self._subscription_failures += 1
+                if self._subscription_failures >= self.max_subscription_retries:
+                    logger.error(
+                        "MarketStore subscription rejected %d consecutive time(s). "
+                        "Giving up.",
+                        self._subscription_failures,
+                    )
+                    raise
+                logger.warning(
+                    "MarketStore subscription rejected (attempt %d/%d). "
+                    "Retrying in %.1f seconds...",
+                    self._subscription_failures,
+                    self.max_subscription_retries,
+                    self.reconnect_delay,
+                )
+                await asyncio.sleep(self.reconnect_delay)
             except Exception as e:
                 if not self._running:
                     break
@@ -150,6 +178,7 @@ class AsyncStreamConn:
                 raise ConnectionError(
                     f"MarketStore subscription error: {confirm['error']}"
                 )
+            self._subscription_failures = 0
             logger.info(
                 "Subscribed to MarketStore streams: %s",
                 confirm.get("streams", self._streams),

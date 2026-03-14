@@ -126,15 +126,16 @@ class QueryReply:
     def from_response(cls, resp: Dict):
         results = decode_responses(resp["responses"])
         return cls(
-            [QueryResult(result, resp["timezone"]) for result in results],
-            resp["timezone"],
+            results=[QueryResult(result, resp["timezone"]) for result in results],
+            timezone=resp["timezone"],
         )
 
     @classmethod
     def from_grpc_response(cls, resp: proto.MultiQueryResponse):  # ->QueryReply:
         results = decode_grpc_responses(resp.responses)
         return cls(
-            [QueryResult(result, resp.timezone) for result in results], resp.timezone
+            results=[QueryResult(result, resp.timezone) for result in results],
+            timezone=resp.timezone,
         )
 
     def first(self) -> DataSet:

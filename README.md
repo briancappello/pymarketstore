@@ -1,66 +1,34 @@
 # pymarketstore
 Python driver for MarketStore
 
-Build Status: ![build status](https://circleci.com/gh/alpacahq/pymarketstore/tree/master.png?971fa5b1079e8af0568db6caf772132c54f04dc2)
+Pymarketstore can query and write financial timeseries data from [MarketStore](https://github.com/briancappello/marketstore)
 
-Pymarketstore can query and write financial timeseries data from [MarketStore](https://github.com/alpacahq/marketstore)
-
-Tested with 3.3+
+Tested with 3.12+
 
 ## How to install
 
 ```
-$ pip install pymarketstore
+$ uv add pymarketstore
 ```
 
-## Examples
+## Store (high-level API)
 
-```
-In [1]: import pymarketstore as pymkts
+```python
+import pandas as pd
 
-## query data
+from pymarketstore import Store, Freq
 
-In [2]: param = pymkts.Params('BTC', '1Min', 'OHLCV', limit=10)
+store = Store()
 
-In [3]: cli = pymkts.Client()
+symbols: list[str] = store.get_symbols()
 
-In [4]: reply = cli.query(param)
+df: pd.DataFrame = store.get('AMD', freq=Freq.day)
+latest_bars: dict[str, pd.DataFrame] = store.get(['AMD', 'NVDA', 'INTC'], freq=Freq.min_1, limit=1)
 
-In [5]: reply.first().df()
-Out[5]:
-                               Open      High       Low     Close     Volume
-Epoch
-2018-01-17 17:19:00+00:00  10400.00  10400.25  10315.00  10337.25   7.772154
-2018-01-17 17:20:00+00:00  10328.22  10359.00  10328.22  10337.00  14.206040
-2018-01-17 17:21:00+00:00  10337.01  10337.01  10180.01  10192.15   7.906481
-2018-01-17 17:22:00+00:00  10199.99  10200.00  10129.88  10160.08  28.119562
-2018-01-17 17:23:00+00:00  10140.01  10161.00  10115.00  10115.01  11.283704
-2018-01-17 17:24:00+00:00  10115.00  10194.99  10102.35  10194.99  10.617131
-2018-01-17 17:25:00+00:00  10194.99  10240.00  10194.98  10220.00   8.586766
-2018-01-17 17:26:00+00:00  10210.02  10210.02  10101.00  10138.00   6.616969
-2018-01-17 17:27:00+00:00  10137.99  10138.00  10108.76  10124.94   9.962978
-2018-01-17 17:28:00+00:00  10124.95  10142.39  10124.94  10142.39   2.262249
-
-## write data
-
-In [7]: import numpy as np
-
-In [8]: import pandas as pd
-
-In [9]: data = np.array([(pd.Timestamp('2017-01-01 00:00').value / 10**9, 10.0)], dtype=[('Epoch', 'i8'), ('Ask', 'f4')])
-
-In [10]: cli.write(data, 'TEST/1Min/Tick')
-Out[10]: {'responses': None}
-
-In [11]: cli.query(pymkts.Params('TEST', '1Min', 'Tick')).first().df()
-Out[11]:
-                            Ask
-Epoch
-2017-01-01 00:00:00+00:00  10.0
-
+store.write('AMD', Freq.day, df)
 ```
 
-## Client
+## Client (low-level API)
 
 `pymkts.Client(endpoint='http://localhost:5993/rpc')`
 
@@ -155,3 +123,106 @@ conn.run(['BTC/*/*'])  # runs until exception
 
 -> received btc {'Open': 4370.0, 'High': 4372.93, 'Low': 4370.0, 'Close': 4371.74, 'Volume': 3.3880948699999993, 'Epoch': 1507299600}
 ```
+
+
+## Async Streaming
+
+`AsyncStreamConn` is the asyncio-native streaming client. It uses the `websockets`
+library and supports automatic reconnection, making it suitable for use inside
+asyncio event loops (e.g. NautilusTrader or a custom `asyncio.run()` entrypoint).
+
+`pymkts.AsyncStreamConn(endpoint, reconnect_delay=3.0)`
+
+Create an async connection instance. `endpoint` is a full WebSocket URL (`ws://`
+or `wss://`). `reconnect_delay` is the number of seconds to wait between
+reconnection attempts after an unexpected disconnect.
+
+`pymkts.AsyncStreamConn#register(stream_pat, func)`
+`@pymkts.AsyncStreamConn#on(stream_pat)`
+
+Register a message handler. `stream_pat` is a regular expression matched against
+the stream key. The handler is called as `handler(key: str, data: dict)` — note
+that unlike the sync `StreamConn`, the key and data are passed as two separate
+arguments rather than a single message dict.
+
+`pymkts.AsyncStreamConn#deregister(stream_pat)`
+
+Remove a previously registered handler. Silently ignored if the pattern has no
+registered handler.
+
+`await pymkts.AsyncStreamConn#run([stream1, stream2, ...])`
+
+Connect to the server, subscribe to the given stream patterns, and enter a
+receive loop. Reconnects automatically on disconnect. The coroutine runs until
+`stop()` is called or the task is cancelled.
+
+`await pymkts.AsyncStreamConn#stop()`
+
+Gracefully close the WebSocket connection and exit the `run()` loop.
+
+```python
+import asyncio
+import pymarketstore as pymkts
+
+conn = pymkts.AsyncStreamConn('ws://localhost:5993/ws', reconnect_delay=3.0)
+
+@conn.on(r'^BTC/')
+def on_btc(key: str, data: dict):
+    print('received btc', key, data)
+
+asyncio.run(conn.run(['BTC/*/*']))
+
+# -> received btc BTC/1Min/OHLCV {'Open': 4370.0, 'High': 4372.93, 'Low': 4370.0, 'Close': 4371.74, 'Volume': 3.39, 'Epoch': 1507299600}
+```
+
+To stop the connection from within a running event loop, call `await conn.stop()`
+from another coroutine, or cancel the task returned by `asyncio.create_task()`:
+
+```python
+async def main():
+    conn = pymkts.AsyncStreamConn('ws://localhost:5993/ws')
+
+    @conn.on(r'^BTC/')
+    def on_btc(key: str, data: dict):
+        print('received btc', key, data)
+
+    task = asyncio.create_task(conn.run(['BTC/*/*']))
+
+    await asyncio.sleep(60)  # stream for 60 seconds, then stop
+    await conn.stop()
+    await task
+
+asyncio.run(main())
+```
+
+## Proto Update Workflow Summary
+
+### For marketstore (Go server):
+1. Edit proto/marketstore.proto with new fields
+
+2. Install compatible protoc plugins (one-time setup)
+
+```shell
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+```
+
+3. Regenerate Go files
+
+```shell
+cd proto && make protoc
+```
+
+### For pymarketstore (Python client):
+
+#### For local development
+
+```shell
+cd ~/dev/pymarketstore/
+cp ~/dev/marketstore/proto/marketstore.proto ./pymarketstore/proto/
+uv run python -m grpc_tools.protoc -I./ --python_out=./ --grpc_python_out=./ ./pymarketstore/proto/marketstore.proto
+```
+
+## License
+
+Apache 2.0

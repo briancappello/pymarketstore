@@ -1,6 +1,8 @@
 import logging
 import re
 
+from datetime import date as date_aliased
+from datetime import datetime
 from typing import *
 
 import msgpack
@@ -8,10 +10,11 @@ import numpy as np
 import pandas as pd
 import requests
 
+from .enums import Freq
 from .params import DataShape, ListSymbolsFormat, Params
 from .results import QueryReply
 from .stream import StreamConn
-from .utils import is_iterable, timeseries_data_to_write_request
+from .utils import is_iterable, parse_date_to_string, timeseries_data_to_write_request
 
 
 logger = logging.getLogger(__name__)
@@ -55,9 +58,25 @@ class JsonRpcClient:
         )
 
     def list_symbols(
-        self, fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL
+        self,
+        fmt: ListSymbolsFormat = ListSymbolsFormat.SYMBOL,
+        timeframe: Freq | str | None = None,
+        date: pd.Timestamp | datetime | date_aliased | str | int | None = None,
     ) -> List[str]:
-        reply = self._request("DataService.ListSymbols", format=fmt.value)
+        """
+        List symbols stored on the MarketStore server.
+
+        :param fmt: The symbol format to request (SYMBOL or TBK)
+        :param timeframe: Optional filter for symbols with data for this timeframe (e.g. "1Min", "1D")
+        :param date: Optional filter for symbols with data on this date ("YYYY-MM-DD" or epoch seconds as string)
+        :return: List of symbol names or time bucket keys
+        """
+        params = {"format": fmt.value}
+        if timeframe is not None:
+            params["timeframe"] = Freq[timeframe].value
+        if date is not None:
+            params["date"] = parse_date_to_string(date)
+        reply = self._request("DataService.ListSymbols", **params)
         return reply.get("Results") or []
 
     def create(self, tbk: str, data_shape: DataShape, row_type: str = "fixed"):

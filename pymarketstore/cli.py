@@ -21,7 +21,7 @@ def cli():
 
 
 @cli.command()
-@click.argument("symbol")
+@click.argument("symbols")
 @click.argument("freq", type=Freq, default=Freq.day)
 @click.option(
     "--start",
@@ -45,27 +45,6 @@ def cli():
     help="Limit number of records returned",
 )
 @click.option(
-    "--host",
-    "-h",
-    type=str,
-    default="localhost",
-    help="MarketStore server host",
-)
-@click.option(
-    "--port",
-    "-p",
-    type=int,
-    default=5993,
-    help="MarketStore server port",
-)
-@click.option(
-    "--grpc",
-    "-g",
-    is_flag=True,
-    default=False,
-    help="Use gRPC instead of JSON-RPC",
-)
-@click.option(
     "--format",
     "-f",
     "output_format",
@@ -73,7 +52,7 @@ def cli():
     default="table",
     help="Output format",
 )
-def query(symbol, freq, start, end, limit, host, port, grpc, output_format):
+def query(symbols, freq, start, end, limit, output_format):
     """Query OHLCV data for a SYMBOL at a given TIMEFRAME.
 
     Examples:
@@ -81,27 +60,23 @@ def query(symbol, freq, start, end, limit, host, port, grpc, output_format):
         pymkts query BTCUSD 1Min --start 2024-01-01 --end 2024-01-31
         pymkts query TSLA 1H --limit 100 --format csv
     """
-    endpoint = f"http://{host}:{port}/rpc"
+    store = pymkts.Store()
 
-    try:
-        df = pymkts.Store(endpoint).get(symbol, freq=freq, start_dt=start, end_dt=end)
+    data = store.get(
+        symbols=[x.strip() for x in symbols.split(",")],
+        freq=freq,
+        start_dt=start,
+        end_dt=end,
+        limit=limit,
+    )
 
-        if df is None or df.empty:
-            click.echo(f"No data found for {symbol}/{freq}/OHLCV", err=True)
-            sys.exit(1)
+    if data is None or not len(data):
+        click.echo(f"No data found for {','.join(symbols)}/{freq}/OHLCV", err=True)
+        sys.exit(1)
 
+    for symbol, df in data.items():
+        print(f"\n{symbol}")
         _output_dataframe(df, output_format)
-
-        print("latest dt")
-        print(pymkts.Store(endpoint).get_latest_dt(symbol, freq=freq))
-
-    except ConnectionError as e:
-        click.echo(f"Error: Could not connect to MarketStore at {endpoint}", err=True)
-        click.echo(f"Details: {e}", err=True)
-        sys.exit(1)
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
 
 
 @cli.command("list")
