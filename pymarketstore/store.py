@@ -87,7 +87,7 @@ class Store:
         """
         return self.client.list_symbols(
             timeframe=freq.value,
-            dt=pd.Timestamp(dt) if dt is not None else None,
+            date=pd.Timestamp(dt) if dt is not None else None,
         )
 
     def write(self, symbol: str, freq: Freq, bars: pd.DataFrame) -> None:
