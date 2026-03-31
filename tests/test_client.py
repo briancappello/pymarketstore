@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 import pymarketstore as pymkts
+
 from pymarketstore.results import QueryReply
 
 from tests.utils import parametrize

@@ -45,8 +45,10 @@ class Store:
             many = False
             symbols = [symbols]
 
+        symbols = [symbol.upper() for symbol in symbols]
+
         p = Params(
-            symbols=[symbol.upper() for symbol in symbols],
+            symbols=symbols,
             timeframe=freq.value,
             attrgroup="OHLCV",
             start=start_dt,

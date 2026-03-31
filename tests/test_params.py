@@ -1,6 +1,7 @@
 import pytest
 
 import pymarketstore as pymkts
+
 from pymarketstore.params import DataShape, DataType, Params
 
 

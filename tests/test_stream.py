@@ -1,14 +1,15 @@
 """Tests for pymarketstore.stream.StreamConn."""
 
 import re
+
 from unittest.mock import MagicMock, call, patch
 
 import msgpack
 import pytest
 
-from pymarketstore.stream import StreamConn
-
 from websocket import ABNF
+
+from pymarketstore.stream import StreamConn
 
 
 # ---------------------------------------------------------------------------
